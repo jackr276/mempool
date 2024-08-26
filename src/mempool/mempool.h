@@ -6,9 +6,15 @@
 #ifndef MEMPOOL_H
 #define MEMPOOL_H
 
-#include <cstddef>
 #include <sys/types.h>
 #include <stdlib.h>
+#include <stdio.h>
+
+
+//For user convenience
+#define kilobyte 1024
+#define megabyte 1048576
+#define gigabyte 1073741824
 
 
 typedef struct {
@@ -20,9 +26,9 @@ typedef struct {
 
 
 /**
- * Initialize the entire memory pool to be of overall size mempool_size bytes
+ * Initialize the entire memory pool to be of overall size of "size" bytes
  */
-void mempool_init(u_int64_t mempool_size);
+int mempool_init(u_int64_t size);
 
 
 /**
@@ -31,7 +37,7 @@ void mempool_init(u_int64_t mempool_size);
  * NOTE: This will make all mem_ptrs invalid and prone to segmentation faults. If you are
  * calling this function, be sure you do not have any active mem_ptrs
  */
-void mempool_destroy();
+int mempool_destroy();
 
 
 /**
