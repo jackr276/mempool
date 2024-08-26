@@ -5,6 +5,8 @@
  */
 
 #include "mempool.h"
+#include <alloca.h>
+#include <c++/12/bits/fs_fwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -64,7 +66,6 @@ int mempool_init(u_int64_t size, u_int64_t default_block_size){
 		//Assign an ID for reference
 		current->block_id = num_blocks - i;
 		//Assign the default block size
-		current->block_size = block_size;
 
 		//Dynamically allocate the block's space
 		current->ptr = malloc(block_size);
@@ -77,6 +78,7 @@ int mempool_init(u_int64_t size, u_int64_t default_block_size){
 	}
 
 	//Once we get here, every block will have been allocated
+	mempool_size = size;
 
 	//Let the caller know all went well
 	return 1;
@@ -102,16 +104,87 @@ struct block* mempool_alloc(u_int64_t num_bytes){
 		return NULL;
 	}
 
+	//Our allocated block
+	struct block* allocated;
 
 	//If this is the case, we don't need to coalesce any blocks. If the user was intelligent about how they chose the block size,
 	//this should be the case the majority of the time
 	if(num_bytes <= block_size){
+		//Grab the head
+		allocated = free_list;
+
+		//"Delete" this from the free list
+		free_list = free_list->next;
+
+		//Attach it to the allocated list
+		allocated->next = allocated_list;
 		
+		//modify the allocated list head
+		allocated_list = allocated;
 
 	} else {
 		//If we get here, we're going to need to coalesce some blocks to have enough space
+		//TODO implement coalescence algo
+		allocated = NULL;
+	}
+
+	//Return the allocated block
+	return allocated;
+}
+
+
+/**
+ * "Free" the block pointed to by the mem_ptr. This isn't actually a free, all we do here is remove it from the allocated_list 
+ * and attach it to the free list
+ */
+void mempool_free(struct block* mem_ptr){
+	//Check we aren't freeing a null
+	if(mem_ptr == NULL){
+		printf("MEMPOOL_ERROR: Attempt to free a null pointer\n");
+		return;
+	}
+
+	//Search through the allocated list to find the pointer directly previous to this one
+	struct block* previous = allocated_list;
+
+	//SPECIAL CASE: the head of the allocated list is the one we want to free
+	if(previous->block_id == mem_ptr->block_id){
+		//"Delete" this from the allocated list
+		allocated_list = allocated_list->next;
+
+		//Add back onto the free list		
+		previous->next = free_list;
+		free_list = previous;
+	} else {
+		//Keep searching so long as the block_id's aren't null
+		while(previous->next != NULL && previous->next->block_id != mem_ptr->block_id){
+			//Advance the pointer
+			previous = previous->next;
+		}
+
+		//If this somehow happened, the free is invalid
+		if(previous == NULL){
+			printf("MEMPOOL_ERROR: Attempt to free a nonexistent pointer. Potential double free detected\n");
+			return;
+		}
+
+		//If we get here, we know that we have the pointer to the block directly preceeding this one
+	
+		//The block we're going to free
+		struct block* freed = previous->next;
+
+		//Remove this from the linked list
+		previous->next = freed->next;
+
+		//Add this back onto the free list
+		freed->next = free_list;
+
+		//Assign as the head
+		free_list = freed;
 	}
 }
+
+
 
 /**
  * Deallocate everything in our mempool. 

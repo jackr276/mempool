@@ -22,7 +22,6 @@
 struct block {
 	//------------ Block metadata --------------
 	u_int64_t block_id;	
-	u_int64_t block_size;
 	//For the linked list functionality
 	struct block* next;
 	//------------------------------------------
