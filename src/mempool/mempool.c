@@ -32,19 +32,19 @@ static struct block* allocated_list = NULL;
 int mempool_init(u_int64_t size, u_int64_t default_block_size){
 	//Input checking
 	if(size <= 0){
-		printf("Invalid size for memory pool, memory pool will not be initialized\n");
+		printf("MEMPOOL_ERROR: Invalid size for memory pool, memory pool will not be initialized\n");
 		return -1;
 	}
 
 	//Check for default_block_size validity
 	if(default_block_size == 0 || default_block_size >= size){
-		printf("Invalid default block size. Block size must be strictly less than overall size. Memory pool will not be initialized.\n");
+		printf("MEMPOOL_ERROR: Invalid default block size. Block size must be strictly less than overall size. Memory pool will not be initialized.\n");
 		return -1;
 	}
 
 	//Check if a memory pool already exists
 	if(free_list != NULL && allocated_list != NULL){
-		printf("A memory pool has already been created. If you wish to create a new one, you must first call mempool_destroy()\n");
+		printf("MEMPOOL_ERROR: A memory pool has already been created. If you wish to create a new one, you must first call mempool_destroy()\n");
 		return -1;
 	}
 
@@ -83,11 +83,45 @@ int mempool_init(u_int64_t size, u_int64_t default_block_size){
 }
 
 
+/**
+ * Allocate a block or block(s) of size num_bytes
+ * 
+ * NOTE: A reminder that this memory allocator gives you the power to choose the block size. If you are consistently allocating
+ * chunks of memory that are larger than the block size, you should consider upping the block size on creation.
+ */
+struct block* mempool_alloc(u_int64_t num_bytes){
+	//Simple error checking but just in case
+	if(num_bytes >= mempool_size){
+		printf("MEMPOOL_ERROR: Attempt to allocate a number of bytes greater than or equal to the entire memory pool size\n");
+		return NULL;
+	}
+	 
+	//Make sure we actually have blocks to give
+	if(free_list == NULL){
+		printf("MEMPOOL_ERROR: No available memory. You either have a memory leak, or you gave the memory pool too small an amount of memory on creation\n");
+		return NULL;
+	}
 
+
+	//If this is the case, we don't need to coalesce any blocks. If the user was intelligent about how they chose the block size,
+	//this should be the case the majority of the time
+	if(num_bytes <= block_size){
+		
+
+	} else {
+		//If we get here, we're going to need to coalesce some blocks to have enough space
+	}
+}
+
+/**
+ * Deallocate everything in our mempool. 
+ *  
+ * NOTE: This is a completely destructive process. Everything block allocated will be deallocated.
+ */
 int mempool_destroy(){
 	//Check to make sure there is actually something to destroy
 	if(free_list == NULL && allocated_list == NULL){
-		printf("No memory pool was ever initialized. Invalid call to destroy.\n");
+		printf("MEMPOOL_ERROR: No memory pool was ever initialized. Invalid call to destroy.\n");
 		return -1;
 	}
 

@@ -14,8 +14,7 @@
 int main(){
 	printf("Creating a memory pool of 4GB\n");
 	//Create a memory pool of size 4 gigabyte
-	u_int64_t num_gbs = 4;
-	mempool_init(num_gbs * GIGABYTE, 512);
+	mempool_init(4l * GIGABYTE, 512);
 
 	
 	printf("Deallocating the entire memory pool\n");
