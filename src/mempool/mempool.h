@@ -12,23 +12,34 @@
 
 
 //For user convenience
-#define kilobyte 1024
-#define megabyte 1048576
-#define gigabyte 1073741824
+#define KILOBYTE 1024
+#define MEGABYTE 1048576
+#define GIGABYTE 1073741824
 
-
-typedef struct {
-	void* region_start;
-	void* region_end;
-	size_t size;
-	size_t used;
-} mem_ptr;
+/**
+ * Define a struct for a block of memory
+ */
+struct block {
+	//------------ Block metadata --------------
+	u_int64_t block_id;	
+	u_int64_t block_size;
+	//For the linked list functionality
+	struct block* next;
+	//------------------------------------------
+	
+	//The pointer that is actually usable
+	void* ptr;
+};
 
 
 /**
- * Initialize the entire memory pool to be of overall size of "size" bytes
+ * Initialize the entire memory pool to be of overall size of "size" bytes, with chunks of size
+ * default_block_size
+ *
+ * NOTE: It is up to the caller to intelligently determine what an appropriate defualt block size is. Using too small
+ * a default size leads to excessive coalescing, and too large a size leads to wasted memory
  */
-int mempool_init(u_int64_t size);
+int mempool_init(u_int64_t size, u_int64_t default_block_size);
 
 
 /**
@@ -46,14 +57,14 @@ int mempool_destroy();
  * NOTE: The memory that is allocated may contain junk values from previous allocations.
  * If this is an issue, use mempool_calloc
  */
-mem_ptr* mempool_alloc(u_int64_t num_bytes);
+struct block* mempool_alloc(u_int64_t num_bytes);
 
 
 /**
  * Allocate num_bytes bytes of memory in the memory pool, and then set "n" of those 
  * bytes to be the value of "value". This avoids the need for calling "memset" manually
  */
-mem_ptr* mempool_calloc(u_int64_t num_bytes, u_int8_t value, u_int64_t n);
+struct block* mempool_calloc(u_int64_t num_bytes, u_int8_t value, u_int64_t n);
 
 
 /**
@@ -62,14 +73,14 @@ mem_ptr* mempool_calloc(u_int64_t num_bytes, u_int8_t value, u_int64_t n);
  * NOTE: num_bytes must be greater than the number of bytes previously allocated to the mem_ptr. If memory
  * smashing is detected, an error will be thrown
  */
-mem_ptr* mempool_ralloc(mem_ptr* mem_ptr, u_int64_t num_bytes);
+struct block* mempool_ralloc(struct block* mem_ptr, u_int64_t num_bytes);
 
 
 /**
  * Free all of the memory in reserved by the mem_ptr region, and destroy
  * the mem_ptr itself
  */
-void mempool_free(mem_ptr* mem_ptr);
+void mempool_free(struct block* mem_ptr);
 
 
 #endif /* MEMPOOL_H */
