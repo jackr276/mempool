@@ -12,16 +12,16 @@
 int main(){
 	printf("Creating a memory pool of 4GB\n");
 	//Create a memory pool of size 4 gigabyte
-	mempool_init(1 * KILOBYTE, 64);
+	mempool_init(1 * MEGABYTE, sizeof(int));
 
-	int* pointers[10];
+	int* pointers[5000];
 
-	for(int i = 0; i < 10; i++){
+	for(int i = 0; i < 5000; i++){
 		pointers[i] = (int*)mempool_alloc(sizeof(int));
-		printf("%p\n", pointers[i]);
+		*(pointers[i]) = 5;
 	}
 
-	for(int i = 0; i < 10; i++){
+	for(int i = 0; i < 5000; i++){
 		mempool_free(pointers[i]);
 	}
 

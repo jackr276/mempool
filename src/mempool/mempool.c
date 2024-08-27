@@ -288,7 +288,6 @@ int mempool_destroy(){
 
 	//Walk the list
 	while(current != NULL){
-		printf("%p\n", current->ptr);
 		//Save the address of current
 		temp = current; 
 		//Advance the pointer
@@ -297,8 +296,6 @@ int mempool_destroy(){
 		//TESTING
 		free(temp);
 	}
-
-	printf("\n");
 	
 	//Set to be null
 	free_list = NULL;
