@@ -14,17 +14,15 @@ int main(){
 	//Create a memory pool of size 4 gigabyte
 	mempool_init(4l * GIGABYTE, 128);
 
-	int* ex = (int*)mempool_calloc(80, 0, 78);
+	int* ex = mempool_calloc(20, sizeof(int));
 
-	for(int i = 0; i < 78; i++){
-		printf("%d\n", ex[i]);
+	for(int i = 0; i < 20; i++){
+		printf("%c\n", ex[i]);
 	}
 
 	mempool_free(ex);
+	mempool_free(ex);
 
-	int b = 7;
-	int* a = &b;
-	mempool_free(a);
 	
 	printf("Deallocating the entire memory pool\n");
 	//Destroy the mempool

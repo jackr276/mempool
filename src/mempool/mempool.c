@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 
 /**
@@ -198,21 +199,20 @@ void mempool_free(void* mem_ptr){
 
 
 /**
- * Allocated a pointer returned by the memory pool and set "n" bytes of
- * it to be "value"
+ * Allocate num_members members of size size each, all set to 0
  */
-void* mempool_calloc(u_int64_t num_bytes, u_int8_t value, u_int64_t n){
+void* mempool_calloc(u_int32_t num_members, size_t size){
 	//Check if we are trying to memset too much
-	if(num_bytes < n){
-		printf("MEMPOOL_ERROR: Attempt to set more bytes than allocated\n");
+	if(num_members * size == 0){
+		printf("MEMPOOL_ERROR: Attempt to allocate 0 bytes\n");
 		return NULL;
 	}
 
 	//Use mempool_alloc to give us the space
-	void* allocated = mempool_alloc(num_bytes);
+	void* allocated = mempool_alloc(num_members * size);
 
-	//Set n bytes of s to be the value
-	memset(allocated, value, n);
+	//Set all to be 0	
+	memset(allocated, 0, num_members * size);
 	
 	//Return the allocated pointer
 	return allocated;

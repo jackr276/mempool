@@ -46,10 +46,9 @@ void* mempool_alloc(u_int64_t num_bytes);
 
 
 /**
- * Allocate num_bytes bytes of memory in the memory pool, and then set "n" of those 
- * bytes to be the value of "value". This avoids the need for calling "memset" manually
+ * Allocate num_members elements of size size each, all initialized to be 0 
  */
-void* mempool_calloc(u_int64_t num_bytes, u_int8_t value, u_int64_t n);
+void* mempool_calloc(u_int32_t num_members, size_t size);
 
 
 /**
