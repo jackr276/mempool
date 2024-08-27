@@ -10,15 +10,14 @@
 #include <sys/types.h>
 
 
-
 int main(){
 	printf("Creating a memory pool of 4GB\n");
 	//Create a memory pool of size 4 gigabyte
 	mempool_init(4l * GIGABYTE, 128);
 
-	struct block* m = mempool_alloc(78l);
+	int* ex = (int*)mempool_calloc(80, 0, 78);
 
-	mempool_free(m);
+	mempool_free(ex);
 
 	
 	printf("Deallocating the entire memory pool\n");

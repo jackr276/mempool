@@ -5,8 +5,7 @@
  */
 
 #include "mempool.h"
-#include <alloca.h>
-#include <c++/12/bits/fs_fwd.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -91,7 +90,7 @@ int mempool_init(u_int64_t size, u_int64_t default_block_size){
  * NOTE: A reminder that this memory allocator gives you the power to choose the block size. If you are consistently allocating
  * chunks of memory that are larger than the block size, you should consider upping the block size on creation.
  */
-struct block* mempool_alloc(u_int64_t num_bytes){
+void* mempool_alloc(u_int64_t num_bytes){
 	//Simple error checking but just in case
 	if(num_bytes >= mempool_size){
 		printf("MEMPOOL_ERROR: Attempt to allocate a number of bytes greater than or equal to the entire memory pool size\n");
@@ -129,7 +128,7 @@ struct block* mempool_alloc(u_int64_t num_bytes){
 	}
 
 	//Return the allocated block
-	return allocated;
+	return allocated->ptr;
 }
 
 
@@ -137,7 +136,7 @@ struct block* mempool_alloc(u_int64_t num_bytes){
  * "Free" the block pointed to by the mem_ptr. This isn't actually a free, all we do here is remove it from the allocated_list 
  * and attach it to the free list
  */
-void mempool_free(struct block* mem_ptr){
+void mempool_free(void* mem_ptr){
 	//Check we aren't freeing a null
 	if(mem_ptr == NULL){
 		printf("MEMPOOL_ERROR: Attempt to free a null pointer\n");
@@ -148,7 +147,7 @@ void mempool_free(struct block* mem_ptr){
 	struct block* previous = allocated_list;
 
 	//SPECIAL CASE: the head of the allocated list is the one we want to free
-	if(previous->block_id == mem_ptr->block_id){
+	if((u_int64_t)(previous->ptr) == (u_int64_t)(mem_ptr)){
 		//"Delete" this from the allocated list
 		allocated_list = allocated_list->next;
 
@@ -157,7 +156,7 @@ void mempool_free(struct block* mem_ptr){
 		free_list = previous;
 	} else {
 		//Keep searching so long as the block_id's aren't null
-		while(previous->next != NULL && previous->next->block_id != mem_ptr->block_id){
+		while(previous->next != NULL && (u_int64_t)(previous->next->ptr) != (u_int64_t)mem_ptr){
 			//Advance the pointer
 			previous = previous->next;
 		}
@@ -184,6 +183,27 @@ void mempool_free(struct block* mem_ptr){
 	}
 }
 
+
+/**
+ * Allocated a pointer returned by the memory pool and set "n" bytes of
+ * it to be "value"
+ */
+void* mempool_calloc(u_int64_t num_bytes, u_int8_t value, u_int64_t n){
+	//Check if we are trying to memset too much
+	if(num_bytes < n){
+		printf("MEMPOOL_ERROR: Attempt to set more bytes than allocated\n");
+		return NULL;
+	}
+
+	//Use mempool_alloc to give us the space
+	void* allocated = mempool_alloc(num_bytes);
+
+	//Set n bytes of s to be the value
+	memset(allocated, value, n);
+	
+	//Return the allocated pointer
+	return allocated;
+}
 
 
 /**

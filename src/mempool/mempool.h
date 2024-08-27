@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 
 //For user convenience
@@ -56,14 +57,14 @@ int mempool_destroy();
  * NOTE: The memory that is allocated may contain junk values from previous allocations.
  * If this is an issue, use mempool_calloc
  */
-struct block* mempool_alloc(u_int64_t num_bytes);
+void* mempool_alloc(u_int64_t num_bytes);
 
 
 /**
  * Allocate num_bytes bytes of memory in the memory pool, and then set "n" of those 
  * bytes to be the value of "value". This avoids the need for calling "memset" manually
  */
-struct block* mempool_calloc(u_int64_t num_bytes, u_int8_t value, u_int64_t n);
+void* mempool_calloc(u_int64_t num_bytes, u_int8_t value, u_int64_t n);
 
 
 /**
@@ -72,14 +73,14 @@ struct block* mempool_calloc(u_int64_t num_bytes, u_int8_t value, u_int64_t n);
  * NOTE: num_bytes must be greater than the number of bytes previously allocated to the mem_ptr. If memory
  * smashing is detected, an error will be thrown
  */
-struct block* mempool_ralloc(struct block* mem_ptr, u_int64_t num_bytes);
+void* mempool_ralloc(struct block* mem_ptr, u_int64_t num_bytes);
 
 
 /**
  * Free all of the memory in reserved by the mem_ptr region, and destroy
  * the mem_ptr itself
  */
-void mempool_free(struct block* mem_ptr);
+void mempool_free(void* ptr);
 
 
 #endif /* MEMPOOL_H */
