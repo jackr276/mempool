@@ -37,6 +37,9 @@ static struct block* free_list = NULL;
 //A list of all allocated blocks
 static struct block* allocated_list = NULL;
 
+//The entire monolithic memory pool
+static void* memory_pool = NULL;
+
 
 /**
  * Initialize the memory pool to be of "size" bytes
@@ -60,9 +63,12 @@ int mempool_init(u_int64_t size, u_int64_t default_block_size){
 		return -1;
 	}
 
+	//Allocate the entire monolithic memory pool
+	memory_pool = malloc(size);
+
 	//Store the block size
 	block_size = default_block_size;
-
+	
 	//Determine how many blocks we need to allocated
 	u_int64_t num_blocks = size / block_size; 
 
@@ -70,11 +76,11 @@ int mempool_init(u_int64_t size, u_int64_t default_block_size){
 	struct block* current;
 	 
 	//Go through and allocate every block
-	for(u_int64_t i = 1; i <= num_blocks; i++){
+	for(u_int64_t offset = 0; offset < num_blocks; offset++){
 		//Reserve space for the block metadata
 		current = (struct block*)malloc(sizeof(struct block));
-		//Dynamically allocate the block's space
-		current->ptr = malloc(block_size);
+		//Allocate the memory as an offset of the pool start pointer
+		current->ptr = memory_pool + offset; 
 
 		//Attach to the free linked list
 		current->next = free_list;
@@ -130,8 +136,20 @@ void* mempool_alloc(u_int64_t num_bytes){
 
 	} else {
 		//If we get here, we're going to need to coalesce some blocks to have enough space
-		//TODO implement coalescence algo
-		allocated = NULL;
+
+		//Figure out how many blocks we need to coalesce
+		u_int32_t blocks_needed = num_bytes / block_size + ((num_bytes % block_size == 0) ? 0 : 1);
+		
+		
+		//We need to grab this many blocks off of the free list
+		u_int32_t i = 0;
+
+		//So long as we need more blocks and we have stuff on the free list
+		while(i < blocks_needed && free_list != NULL){
+			
+			i++;
+		}
+		
 	}
 
 	//Return the allocated block
@@ -237,8 +255,6 @@ int mempool_destroy(){
 
 	//Walk the list
 	while(current != NULL){
-		//Free the current pointer
-		free(current->ptr);
 		//Save the address of current
 		temp = current; 
 		//Advance the pointer
@@ -255,8 +271,6 @@ int mempool_destroy(){
 
 	//Walk the list
 	while(current != NULL){
-		//Free the current pointer
-		free(current->ptr);
 		//Save the address of current
 		temp = current; 
 		//Advance the pointer
