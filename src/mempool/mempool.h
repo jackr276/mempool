@@ -18,21 +18,6 @@
 #define GIGABYTE 1073741824
 
 /**
- * Define a struct for a block of memory
- */
-struct block {
-	//------------ Block metadata --------------
-	u_int64_t block_id;	
-	//For the linked list functionality
-	struct block* next;
-	//------------------------------------------
-	
-	//The pointer that is actually usable
-	void* ptr;
-};
-
-
-/**
  * Initialize the entire memory pool to be of overall size of "size" bytes, with chunks of size
  * default_block_size
  *
@@ -73,7 +58,7 @@ void* mempool_calloc(u_int64_t num_bytes, u_int8_t value, u_int64_t n);
  * NOTE: num_bytes must be greater than the number of bytes previously allocated to the mem_ptr. If memory
  * smashing is detected, an error will be thrown
  */
-void* mempool_ralloc(struct block* mem_ptr, u_int64_t num_bytes);
+void* mempool_realloc(void* ptr, u_int64_t num_bytes);
 
 
 /**

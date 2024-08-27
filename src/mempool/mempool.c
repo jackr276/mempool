@@ -10,12 +10,22 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
+/**
+ * Define a struct for a block of memory
+ */
+struct block {
+	//------------ Block metadata --------------
+	//For the linked list functionality
+	struct block* next;
+	//------------------------------------------
+	
+	//The pointer that is actually usable
+	void* ptr;
+};
+
 
 //Overall size of the mempool
 static u_int64_t mempool_size;
-
-//The amount of memory currently used
-static u_int64_t mempool_used;
 
 //The default block size
 static u_int64_t block_size;
@@ -62,10 +72,6 @@ int mempool_init(u_int64_t size, u_int64_t default_block_size){
 	for(u_int64_t i = 1; i <= num_blocks; i++){
 		//Reserve space for the block metadata
 		current = (struct block*)malloc(sizeof(struct block));
-		//Assign an ID for reference
-		current->block_id = num_blocks - i;
-		//Assign the default block size
-
 		//Dynamically allocate the block's space
 		current->ptr = malloc(block_size);
 
@@ -143,6 +149,11 @@ void mempool_free(void* mem_ptr){
 		return;
 	}
 
+	if(allocated_list == NULL){
+		printf("MEMPOOL_ERROR: Attempt to free a nonexistent pointer. Potential double free detected\n");
+		return;
+	}
+
 	//Search through the allocated list to find the pointer directly previous to this one
 	struct block* previous = allocated_list;
 
@@ -154,8 +165,10 @@ void mempool_free(void* mem_ptr){
 		//Add back onto the free list		
 		previous->next = free_list;
 		free_list = previous;
+
 	} else {
-		//Keep searching so long as the block_id's aren't null
+		//Case -- we are in the middle of the list
+		//Keep searching so long as the blocks aren't null
 		while(previous->next != NULL && (u_int64_t)(previous->next->ptr) != (u_int64_t)mem_ptr){
 			//Advance the pointer
 			previous = previous->next;
@@ -257,7 +270,6 @@ int mempool_destroy(){
 
 	//Reset these values
 	mempool_size = 0;
-	mempool_used = 0;
 	
 	//Let the caller know all went well
 	return 1;
