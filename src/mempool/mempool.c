@@ -74,19 +74,30 @@ int mempool_init(u_int64_t size, u_int64_t default_block_size){
 
 	//Current block pointer
 	struct block* current;
+
+	struct block* free_list_tail = NULL;
 	 
 	//Go through and allocate every block
+	//Note -- these blocks are in order in the memory(block 1's pointer ends and block 2's pointer begins)
 	for(u_int64_t offset = 0; offset < num_blocks; offset++){
 		//Reserve space for the block metadata
 		current = (struct block*)malloc(sizeof(struct block));
-		//Allocate the memory as an offset of the pool start pointer
-		current->ptr = memory_pool + offset; 
+		//"Allocate" the memory as an offset of the pool start pointer
+		current->ptr = memory_pool + offset * block_size; 
+		//Set to be NULL
+		current->next = NULL;
 
-		//Attach to the free linked list
-		current->next = free_list;
-		
-		//Set the head to be current
-		free_list = current;
+		//Very first allocation
+		if(free_list == NULL){
+			//Set the free list head
+			free_list = current;
+			//Set the tail
+			free_list_tail = current;
+		} else {
+			//Generic case, attach to tail
+			free_list_tail->next = current;
+			free_list_tail = current;
+		}
 	}
 
 	//Once we get here, every block will have been allocated
@@ -173,28 +184,29 @@ void mempool_free(void* mem_ptr){
 		return;
 	}
 
+	//A reference to the block that we want to free
+	struct block* freed;
+
 	//Search through the allocated list to find the pointer directly previous to this one
-	struct block* previous = allocated_list;
+	struct block* cursor = allocated_list;
 
 	//SPECIAL CASE: the head of the allocated list is the one we want to free
-	if((u_int64_t)(previous->ptr) == (u_int64_t)(mem_ptr)){
+	if((u_int64_t)(cursor->ptr) == (u_int64_t)(mem_ptr)){
+		//Save the guy we want to free
+		freed = cursor;
 		//"Delete" this from the allocated list
 		allocated_list = allocated_list->next;
-
-		//Add back onto the free list		
-		previous->next = free_list;
-		free_list = previous;
 
 	} else {
 		//Case -- we are in the middle of the list
 		//Keep searching so long as the blocks aren't null
-		while(previous->next != NULL && (u_int64_t)(previous->next->ptr) != (u_int64_t)mem_ptr){
+		while(cursor->next != NULL && (u_int64_t)(cursor->next->ptr) != (u_int64_t)mem_ptr){
 			//Advance the pointer
-			previous = previous->next;
+			cursor = cursor->next;
 		}
 
 		//If this somehow happened, the free is invalid
-		if(previous == NULL){
+		if(cursor == NULL){
 			printf("MEMPOOL_ERROR: Attempt to free a nonexistent pointer. Potential double free detected\n");
 			return;
 		}
@@ -202,16 +214,37 @@ void mempool_free(void* mem_ptr){
 		//If we get here, we know that we have the pointer to the block directly preceeding this one
 	
 		//The block we're going to free
-		struct block* freed = previous->next;
+		freed = cursor->next;
 
-		//Remove this from the linked list
-		previous->next = freed->next;
+		//Remove this from the allocated list
+		cursor->next = freed->next;
+	}
 
-		//Add this back onto the free list
+	//We now need to strategically add this back onto the free list. We want the free list to be as in order as possible according to
+	//the memory addresses of the blocks, in case we ever need to coalesce blocks
+	cursor = free_list;
+
+	//Special case -- insert at head if the head's address is higher than the freeds
+	if((u_int64_t)(cursor->ptr) > (u_int64_t)(freed->ptr)){
+		//Insert at head
 		freed->next = free_list;
-
-		//Assign as the head
 		free_list = freed;
+
+	} else {
+		//We want to keep going until the cursor's next pointer is not less than the freed's pointer
+		while(cursor->next != NULL && (u_int64_t)(cursor->next->ptr) < (u_int64_t)(freed->ptr)){
+			cursor = cursor->next;
+		}
+
+		//If we get here, the cursor's memory address is less than the freed's, but the one after the cursor is not, so we need to insert the freed
+		//inbetween the cursor and what comes after it
+	
+		//Save the cursor's next 
+		struct block* temp = cursor->next;
+
+		//Insert freed inbetween
+		cursor->next = freed;
+		freed->next = temp;
 	}
 }
 
@@ -255,13 +288,17 @@ int mempool_destroy(){
 
 	//Walk the list
 	while(current != NULL){
+		printf("%p\n", current->ptr);
 		//Save the address of current
 		temp = current; 
 		//Advance the pointer
 		current = current->next;
 		//Free the current block stored in temp
+		//TESTING
 		free(temp);
 	}
+
+	printf("\n");
 	
 	//Set to be null
 	free_list = NULL;
