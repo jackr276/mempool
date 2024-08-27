@@ -24,7 +24,7 @@
  * NOTE: It is up to the caller to intelligently determine what an appropriate defualt block size is. Using too small
  * a default size leads to excessive coalescing, and too large a size leads to wasted memory
  */
-int mempool_init(u_int64_t size, u_int64_t default_block_size);
+int mempool_init(u_int32_t size, u_int32_t default_block_size);
 
 
 /**
@@ -40,9 +40,9 @@ int mempool_destroy();
  * Allocate num_bytes bytes of memory in the memory pool. 
  *
  * NOTE: The memory that is allocated may contain junk values from previous allocations.
- * If this is an issue, use mempool_calloc
+ * If this is an issue, use mempool_calloc for a clean wipe
  */
-void* mempool_alloc(u_int64_t num_bytes);
+void* mempool_alloc(u_int32_t num_bytes);
 
 
 /**
@@ -57,7 +57,7 @@ void* mempool_calloc(u_int32_t num_members, size_t size);
  * NOTE: num_bytes must be greater than the number of bytes previously allocated to the mem_ptr. If memory
  * smashing is detected, an error will be thrown
  */
-void* mempool_realloc(void* ptr, u_int64_t num_bytes);
+void* mempool_realloc(void* ptr, u_int32_t num_bytes);
 
 
 /**

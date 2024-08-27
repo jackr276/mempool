@@ -6,6 +6,7 @@
 
 #include "mempool.h"
 
+#include <c++/12/bits/fs_fwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,6 +19,8 @@ struct block {
 	//------------ Block metadata --------------
 	//For the linked list functionality
 	struct block* next;
+	//The size may change if we coalesce
+	u_int32_t size;
 	//------------------------------------------
 	
 	//The pointer that is actually usable
@@ -26,10 +29,10 @@ struct block {
 
 
 //Overall size of the mempool
-static u_int64_t mempool_size;
+static u_int32_t mempool_size;
 
 //The default block size
-static u_int64_t block_size;
+static u_int32_t block_size;
 
 //A list of all free blocks
 static struct block* free_list = NULL;
@@ -44,7 +47,7 @@ static void* memory_pool = NULL;
 /**
  * Initialize the memory pool to be of "size" bytes
  */
-int mempool_init(u_int64_t size, u_int64_t default_block_size){
+int mempool_init(u_int32_t size, u_int32_t default_block_size){
 	//Input checking
 	if(size <= 0){
 		printf("MEMPOOL_ERROR: Invalid size for memory pool, memory pool will not be initialized\n");
@@ -70,7 +73,7 @@ int mempool_init(u_int64_t size, u_int64_t default_block_size){
 	block_size = default_block_size;
 	
 	//Determine how many blocks we need to allocated
-	u_int64_t num_blocks = size / block_size; 
+	u_int32_t num_blocks = size / block_size; 
 
 	//Current block pointer
 	struct block* current;
@@ -79,11 +82,13 @@ int mempool_init(u_int64_t size, u_int64_t default_block_size){
 	 
 	//Go through and allocate every block
 	//Note -- these blocks are in order in the memory(block 1's pointer ends and block 2's pointer begins)
-	for(u_int64_t offset = 0; offset < num_blocks; offset++){
+	for(u_int32_t offset = 0; offset < num_blocks; offset++){
 		//Reserve space for the block metadata
 		current = (struct block*)malloc(sizeof(struct block));
 		//"Allocate" the memory as an offset of the pool start pointer
 		current->ptr = memory_pool + offset * block_size; 
+		//Initially everything has the same block size
+		current->size = block_size;
 		//Set to be NULL
 		current->next = NULL;
 
@@ -114,7 +119,7 @@ int mempool_init(u_int64_t size, u_int64_t default_block_size){
  * NOTE: A reminder that this memory allocator gives you the power to choose the block size. If you are consistently allocating
  * chunks of memory that are larger than the block size, you should consider upping the block size on creation.
  */
-void* mempool_alloc(u_int64_t num_bytes){
+void* mempool_alloc(u_int32_t num_bytes){
 	//Simple error checking but just in case
 	if(num_bytes >= mempool_size){
 		printf("MEMPOOL_ERROR: Attempt to allocate a number of bytes greater than or equal to the entire memory pool size\n");
@@ -267,6 +272,25 @@ void* mempool_calloc(u_int32_t num_members, size_t size){
 	
 	//Return the allocated pointer
 	return allocated;
+}
+
+
+/**
+ * Reallocate the pointer and copy over the contents of the previous pointer to the new memory space
+ */
+void* mempool_realloc(void* pointer, u_int32_t num_bytes){
+	//If the allocated list is NULL, we can't realloc anything
+	if(allocated_list == NULL){
+		printf("MEMPOOL_ERROR: Nothing from the mempool was allocated, realloc is impossible\n");
+		return NULL;
+	}
+
+	//If the pointer is NULL
+
+	//We first need to find this value in the allocated list
+	struct block* cursor = allocated_list;
+
+	return NULL;
 }
 
 
