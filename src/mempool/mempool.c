@@ -188,6 +188,17 @@ void* mempool_alloc(u_int32_t num_bytes){
 			cursor = cursor->next;
 		}
 
+		//Once we get here, we either found enough contiguous blocks or not
+		//This means we did not find enough blocks in a row
+		if(contiguous_blocks < blocks_needed){
+			printf("MEMPOOL_ERROR: Unable to allocated block of size %d bytes due to insufficient space.\n"
+						   "Either make the mempool larger, or free more space.\n", num_bytes);
+			return NULL;
+		}
+
+		//If we get here though, this means that we do have enough space to merge "blocks_needed" blocks, starting at the pointer
+		//contiguous_chunk_head
+		
 	}
 
 	//Return the allocated block
