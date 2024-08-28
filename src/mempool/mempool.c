@@ -30,6 +30,9 @@ struct block {
 //Overall size of the mempool
 static u_int32_t mempool_size;
 
+//The total bytes currently in use
+static u_int32_t mempool_used;
+
 //The default block size
 static u_int32_t block_size;
 
@@ -106,6 +109,7 @@ int mempool_init(u_int32_t size, u_int32_t default_block_size){
 
 	//Once we get here, every block will have been allocated
 	mempool_size = size;
+	mempool_used = 0;
 
 	//Let the caller know all went well
 	return 1;
@@ -128,6 +132,12 @@ void* mempool_alloc(u_int32_t num_bytes){
 	//Make sure we actually have blocks to give
 	if(free_list == NULL){
 		printf("MEMPOOL_ERROR: No available memory. You either have a memory leak, or you gave the memory pool too small an amount of memory on creation\n");
+		return NULL;
+	}
+
+	//This would also lead to an error that we may not catch before if we had to coalesce
+	if(mempool_used + num_bytes >= mempool_size){
+		printf("MEMPOOL_ERROR: Insufficient available memory. You either have a memory leak, or you gave the memory pool too small an amount of memory on creation\n");
 		return NULL;
 	}
 
@@ -254,6 +264,8 @@ void* mempool_alloc(u_int32_t num_bytes){
 		allocated = contiguous_chunk_head;
 	}
 
+	//If we get here, we were able to allocated, so increase the bytes used
+	mempool_used += allocated->size;
 	//Return the allocated block
 	return allocated->ptr;
 }
@@ -474,6 +486,7 @@ int mempool_destroy(){
 
 	//Reset these values
 	mempool_size = 0;
+	mempool_used = 0;
 	
 	//Let the caller know all went well
 	return 1;
