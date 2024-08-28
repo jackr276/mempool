@@ -324,14 +324,51 @@ void mempool_free(void* ptr){
 		cursor->next = freed->next;
 	}
 
+	//The "tail" of the freed allocation
+	struct block* freed_tail;
+
+	//The bytes we will free
+	u_int32_t bytes_freed = freed->size;
+
+	//If the block size is equal, then freed and freed_tail are the same thing
+	if(freed->size == block_size){
+		freed_tail = freed;
+	} else {
+		//The number of blocks that we'll need to make
+		u_int32_t num_blocks = freed->size / block_size;
+
+		//Freed will be our first block, and we need to reduce his size to the block size
+		freed->size = block_size;
+
+		//This means that we have a coalesced block, so we're going to need to "uncoalesce" it
+		struct block* intermediate = freed;
+
+		//We now need to make new blocks
+		for(u_int16_t i = 1; i < num_blocks; i++){
+			//Create a new block
+			struct block* block = (struct block*)malloc(sizeof(struct block));
+			block->size = block_size;
+			//Assign the pointer to have the appropraite offset
+			block->ptr = freed->ptr + block_size * i;
+			
+			//Attach to the linked list
+			intermediate->next = block;
+			intermediate = block;
+		}
+
+		//The very last intermediary is the tail
+		freed_tail = intermediate;
+	}
+
 	//We now need to strategically add this back onto the free list. We want the free list to be as in order as possible according to
 	//the memory addresses of the blocks, in case we ever need to coalesce blocks
 	cursor = free_list;
 
+
 	//Special case -- insert at head if the head's address is higher than the freeds
 	if((u_int64_t)(cursor->ptr) > (u_int64_t)(freed->ptr)){
 		//Insert at head
-		freed->next = free_list;
+		freed_tail->next = free_list;
 		free_list = freed;
 
 	} else {
@@ -348,8 +385,11 @@ void mempool_free(void* ptr){
 
 		//Insert freed inbetween
 		cursor->next = freed;
-		freed->next = temp;
+		freed_tail->next = temp;
 	}
+
+	//Record that we freed these bytes
+	mempool_used -= bytes_freed;
 }
 
 
@@ -483,6 +523,9 @@ int mempool_destroy(){
 
 	//Set to be null
 	allocated_list = NULL;
+
+	//Free the entire mempool
+	free(memory_pool);
 
 	//Reset these values
 	mempool_size = 0;
