@@ -156,15 +156,38 @@ void* mempool_alloc(u_int32_t num_bytes){
 		//Figure out how many blocks we need to coalesce
 		u_int32_t blocks_needed = num_bytes / block_size + ((num_bytes % block_size == 0) ? 0 : 1);
 		
-		
-		//We need to grab this many blocks off of the free list
-		u_int32_t i = 0;
+		//We need contiguous blocks, i.e, their memory addresses have to be one after the other
+		//This is not a guarantee in the free list, so we have to search until we find this
+		struct block* cursor = free_list;
+		//Store the address of the previous pointer 
+		u_int64_t previous_address = (u_int64_t)(cursor->ptr);
+		//We already have 1 contiguous block by default
+		u_int16_t contiguous_blocks = 1;
+		//By default, the cursor start is the very start of our continuous blocks
+		struct block* contiguous_chunk_head = cursor;
 
-		//So long as we need more blocks and we have stuff on the free list
-		while(i < blocks_needed && free_list != NULL){
-			
-			i++;
+		//Advance the pointer since we already dealt with the first one
+		cursor = cursor->next;
+
+		//While the cursor isn't null and we don't have enough blocks
+		while(cursor != NULL && contiguous_blocks < blocks_needed){
+			//If the difference the cursor's pointer and the previous one is the block size, we have 
+			//a contiguous block
+			if((u_int64_t)(cursor->ptr) - previous_address == block_size){
+				contiguous_blocks++;
+			} else {
+				//Otherwise, we're back to square one
+				contiguous_blocks = 1;
+				//We will also mark the cursor as the start of the next contiguous block
+				contiguous_chunk_head = cursor;
+			}
+
+			//Set the previous_address to be the cursor's address
+			previous_address = (u_int64_t)(cursor->ptr);
+			//Advance the cursor
+			cursor = cursor->next;
 		}
+
 	}
 
 	//Return the allocated block
