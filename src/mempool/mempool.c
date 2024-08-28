@@ -165,7 +165,6 @@ void* mempool_alloc(u_int32_t num_bytes){
 			
 			i++;
 		}
-		
 	}
 
 	//Return the allocated block
@@ -177,13 +176,14 @@ void* mempool_alloc(u_int32_t num_bytes){
  * "Free" the block pointed to by the mem_ptr. This isn't actually a free, all we do here is remove it from the allocated_list 
  * and attach it to the free list
  */
-void mempool_free(void* mem_ptr){
+void mempool_free(void* ptr){
 	//Check we aren't freeing a null
-	if(mem_ptr == NULL){
+	if(ptr == NULL){
 		printf("MEMPOOL_ERROR: Attempt to free a null pointer\n");
 		return;
 	}
 
+	//If nothing was allocated, then we can't free anything
 	if(allocated_list == NULL){
 		printf("MEMPOOL_ERROR: Attempt to free a nonexistent pointer. Potential double free detected\n");
 		return;
@@ -196,7 +196,7 @@ void mempool_free(void* mem_ptr){
 	struct block* cursor = allocated_list;
 
 	//SPECIAL CASE: the head of the allocated list is the one we want to free
-	if((u_int64_t)(cursor->ptr) == (u_int64_t)(mem_ptr)){
+	if((u_int64_t)(cursor->ptr) == (u_int64_t)(ptr)){
 		//Save the guy we want to free
 		freed = cursor;
 		//"Delete" this from the allocated list
@@ -205,7 +205,7 @@ void mempool_free(void* mem_ptr){
 	} else {
 		//Case -- we are in the middle of the list
 		//Keep searching so long as the blocks aren't null
-		while(cursor->next != NULL && (u_int64_t)(cursor->next->ptr) != (u_int64_t)mem_ptr){
+		while(cursor->next != NULL && (u_int64_t)(cursor->next->ptr) != (u_int64_t)ptr){
 			//Advance the pointer
 			cursor = cursor->next;
 		}
@@ -278,19 +278,64 @@ void* mempool_calloc(u_int32_t num_members, size_t size){
 /**
  * Reallocate the pointer and copy over the contents of the previous pointer to the new memory space
  */
-void* mempool_realloc(void* pointer, u_int32_t num_bytes){
+void* mempool_realloc(void* ptr, u_int32_t num_bytes){
 	//If the allocated list is NULL, we can't realloc anything
 	if(allocated_list == NULL){
 		printf("MEMPOOL_ERROR: Nothing from the mempool was allocated, realloc is impossible\n");
 		return NULL;
 	}
 
-	//If the pointer is NULL
+	//If the pointer is NULL, error out
+	if(ptr == NULL){
+		printf("MEMPOOL_ERROR: Attempt to realloc a null pointer. Potential use after free detected.\n");
+		return NULL;
+	}
+
+	//Just in case a mistake like this happens...
+	if(num_bytes == 0){
+		printf("MEMPOOL_ERROR: Attempt to realloc with size of 0 bytes. Invalid input.\n");
+	}
 
 	//We first need to find this value in the allocated list
 	struct block* cursor = allocated_list;
+	struct block* realloc_target = NULL;
 
-	return NULL;
+	//Keep searching through the list until we find what we're looking for
+	while(cursor != NULL){
+		//If we find what we're looking for, leave the loop
+		if((u_int64_t)(cursor->ptr) == (u_int64_t)(ptr)){
+			realloc_target = cursor;
+			break;
+		}
+		
+		//If we didn't find what we're after, advance the pointer
+		cursor = cursor->next;
+	}
+
+	//If the target is still NULL, that means we didn't find the block
+	if(realloc_target == NULL){
+		printf("MEMPOOL_ERROR: Attempt to realloc a nonexistent pointer. Potential use after free detected\n");
+		return NULL;
+	}
+
+	//The user may have inadvertently tried to realloc when there already is enough space in the block. If this is the
+	//case, just return the pointer they gave without any fanfare
+	if(realloc_target->size <= num_bytes){
+		return ptr;
+	}
+
+	//Otherwise, we actually do need to resize the entire thing
+	//Allocate fresh space
+	void* reallocated = mempool_alloc(num_bytes);
+
+	//Copy over the entirety of the contents into the new pointer
+	memcpy(reallocated, ptr, realloc_target->size);
+
+	//Now that we have all of the contents copied over, we can free the old pointer
+	mempool_free(ptr);
+
+	//Return the realloc'd pointer
+	return reallocated;
 }
 
 
