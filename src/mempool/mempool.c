@@ -6,7 +6,6 @@
 
 #include "mempool.h"
 
-#include <c++/12/bits/fs_fwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -199,6 +198,60 @@ void* mempool_alloc(u_int32_t num_bytes){
 		//If we get here though, this means that we do have enough space to merge "blocks_needed" blocks, starting at the pointer
 		//contiguous_chunk_head
 		
+		//Let's find the tail so that we can easily remove
+		struct block* contiguous_chunk_tail = contiguous_chunk_head;
+
+		//First find the tail of the chunk
+		for(u_int16_t i = 1; i < contiguous_blocks; i++){
+			contiguous_chunk_tail = contiguous_chunk_tail->next;
+		}
+
+		//Once we have the tail, we need the block before the contiguous_chunk_head
+		//SPECIAL CASE: The chunk_head is the head of the free list
+		if((u_int64_t)(free_list->ptr) == (u_int64_t)(contiguous_chunk_head->ptr)){
+			//Remove everything from the free list by setting the free_list to be after the tail
+			free_list = contiguous_chunk_tail->next;
+		} else {
+			//Otherwise, we have to traverse to find the block before the head of the contiguous chunk
+			struct block* previous = free_list;
+
+			//Keep searching until we have the block directly before the chunk head
+			while((u_int64_t)(previous->next->ptr) != (u_int64_t)(contiguous_chunk_head->ptr)){
+				previous = previous->next;
+			}
+
+			//We now have the block directly before the chunk head, so we'll remove the entire chunk at once
+			previous->next = contiguous_chunk_tail->next;
+		}
+
+		//Set this for later
+		contiguous_chunk_tail->next = NULL;
+
+		//We've now remove everything from the free list, so all that's left to do is "coalesce"	
+		
+		//Increase this pointer's size
+		contiguous_chunk_head->size *= blocks_needed;
+
+		//Prepare to delete all of the other coalesced blocks
+		struct block* needs_freeing = contiguous_chunk_head->next;
+		struct block* temp;
+
+		//Now we can just free all of the other blocks, so their memory regions, which no belong to the contiguous_chunk_head, can no longer be used
+		//Free all of the blocks blocks after the head
+		while(needs_freeing != NULL){
+			temp = needs_freeing;
+			//Advance the pointer
+			needs_freeing = needs_freeing->next;
+			//Free the current one
+			free(temp);
+		}
+
+		//Once we're here, we've successfully coalesced and removed everything, so we can add the head to the allocated_list
+		contiguous_chunk_head->next = allocated_list;
+		allocated_list = contiguous_chunk_head;
+
+		//Set this for our return
+		allocated = contiguous_chunk_head;
 	}
 
 	//Return the allocated block

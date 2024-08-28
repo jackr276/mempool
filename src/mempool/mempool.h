@@ -41,6 +41,9 @@ int mempool_destroy();
  *
  * NOTE: The memory that is allocated may contain junk values from previous allocations.
  * If this is an issue, use mempool_calloc for a clean wipe
+ *
+ * NOTE: A reminder that this memory allocator gives you the power to choose the block size. If you are consistently allocating
+ * chunks of memory that are larger than the block size, you should consider upping the block size on creation.
  */
 void* mempool_alloc(u_int32_t num_bytes);
 
