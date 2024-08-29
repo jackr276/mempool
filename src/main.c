@@ -12,20 +12,20 @@
 int main(){
 	printf("Creating a memory pool of 4GB\n");
 	//Create a memory pool of size 4 gigabyte
-	mempool_init(1 * MEGABYTE, sizeof(int));
+	mempool_init(1 * KILOBYTE, sizeof(int));
 
 	//Attempt to coalesce
 	int* ints = (int*)mempool_alloc(sizeof(int) * 50);
 
 
-	int* pointers[5000];
+	int* pointers[50];
 
-	for(int i = 0; i < 5000; i++){
+	for(int i = 0; i < 50; i++){
 		pointers[i] = (int*)mempool_alloc(sizeof(int));
 		*(pointers[i]) = 5;
 	}
 
-	for(int i = 0; i < 5000; i++){
+	for(int i = 0; i < 50; i++){
 		mempool_free(pointers[i]);
 	}
 

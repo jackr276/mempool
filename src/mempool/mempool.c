@@ -5,11 +5,8 @@
  */
 
 #include "mempool.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
+//For our thread safety and mutexes
+#include <pthread.h>
 
 /**
  * Define a struct for a block of memory
@@ -41,6 +38,10 @@ static struct block* free_list = NULL;
 
 //A list of all allocated blocks
 static struct block* allocated_list = NULL;
+
+//For thread safety
+static pthread_mutex_t free_mutex;
+static pthread_mutex_t allocated_mutex;
 
 //The entire monolithic memory pool
 static void* memory_pool = NULL;
@@ -110,6 +111,11 @@ int mempool_init(u_int32_t size, u_int32_t default_block_size){
 	//Once we get here, every block will have been allocated
 	mempool_size = size;
 	mempool_used = 0;
+
+	//Initialize the mutexes
+	pthread_mutex_init(&free_mutex,  NULL);
+	pthread_mutex_init(&allocated_mutex,  NULL);
+
 
 	//Let the caller know all went well
 	return 1;
@@ -496,6 +502,7 @@ int mempool_destroy(){
 
 	//Walk the list
 	while(current != NULL){
+		printf("%p->", current->ptr);
 		//Save the address of current
 		temp = current; 
 		//Advance the pointer
@@ -504,6 +511,7 @@ int mempool_destroy(){
 		//TESTING
 		free(temp);
 	}
+	printf("\n");
 	
 	//Set to be null
 	free_list = NULL;
@@ -530,6 +538,10 @@ int mempool_destroy(){
 	//Reset these values
 	mempool_size = 0;
 	mempool_used = 0;
+
+	//Destroy the mutexes
+	pthread_mutex_destroy(&free_mutex);
+	pthread_mutex_destroy(&allocated_mutex);
 	
 	//Let the caller know all went well
 	return 1;

@@ -12,6 +12,6 @@ fi
 rm -r out/*
 
 
-gcc -Wall -Wextra ./src/main.c ./src/mempool/mempool.c -o ./out/main
+gcc -pthread -Wall -Wextra ./src/main.c ./src/mempool/mempool.c -o ./out/main
 
 ./out/main
