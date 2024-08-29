@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 
-
+//TEST CODE
 void* thread_allocate(void* params){
 	int* ints = mempool_alloc(sizeof(int) * 50);
 
