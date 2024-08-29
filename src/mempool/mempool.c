@@ -7,6 +7,7 @@
 #include "mempool.h"
 //For our thread safety and mutexes
 #include <pthread.h>
+#include <stdio.h>
 
 /**
  * Define a struct for a block of memory
@@ -38,6 +39,8 @@ static struct block* free_list = NULL;
 
 //A list of all allocated blocks
 static struct block* allocated_list = NULL;
+//Keep track of coalesced blocks
+static u_int32_t num_coalesced;
 
 //For thread safety
 static pthread_mutex_t free_mutex;
@@ -68,6 +71,8 @@ int mempool_init(u_int32_t size, u_int32_t default_block_size){
 		printf("MEMPOOL_ERROR: A memory pool has already been created. If you wish to create a new one, you must first call mempool_destroy()\n");
 		return -1;
 	}
+
+	num_coalesced = 0;
 
 	//Allocate the entire monolithic memory pool
 	memory_pool = malloc(size);
@@ -178,6 +183,7 @@ void* mempool_alloc(u_int32_t num_bytes){
 		pthread_mutex_unlock(&allocated_mutex);
 
 	} else {
+		num_coalesced++;
 		//If we get here, we're going to need to coalesce some blocks to have enough space
 
 		//Figure out how many blocks we need to coalesce
@@ -481,6 +487,8 @@ void* mempool_realloc(void* ptr, u_int32_t num_bytes){
 		printf("MEMPOOL_ERROR: Attempt to realloc with size of 0 bytes. Invalid input.\n");
 	}
 
+	printf("Calling realloc\n");
+
 	//We will be searching through a list, so be sure to lock
 	pthread_mutex_lock(&allocated_mutex);
 
@@ -511,7 +519,8 @@ void* mempool_realloc(void* ptr, u_int32_t num_bytes){
 
 	//The user may have inadvertently tried to realloc when there already is enough space in the block. If this is the
 	//case, just return the pointer they gave without any fanfare
-	if(realloc_target->size <= num_bytes){
+	if(realloc_target->size >= num_bytes){
+		printf("Here\n");
 		return ptr;
 	}
 
@@ -582,6 +591,10 @@ int mempool_destroy(){
 	//Reset these values
 	mempool_size = 0;
 	mempool_used = 0;
+	
+	printf("Coalesced blocks: %d\n", num_coalesced);
+
+	num_coalesced = 0;
 
 	//Destroy the mutexes
 	pthread_mutex_destroy(&free_mutex);
