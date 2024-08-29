@@ -172,14 +172,12 @@ void solve(int N, struct state* start_state, struct state* goal_state){
 	printf("Goal state\n");
 	print_state(goal_state, N, 0);
 	 
-	
+	//We will keep track of the time taken to execute
+	clock_t begin_CPU = clock();
 
 	//Create the fringe and closed structues
 	struct fringe* fringe = initialize_fringe();
 	struct closed* closed = initialize_closed();
-
-	//We will keep track of the time taken to execute
-	clock_t begin_CPU = clock();
 
 	//We will keep track of the number of iterations as a sanity check for large problems
 	int iteration = 0;
