@@ -153,17 +153,29 @@ void* mempool_alloc(u_int32_t num_bytes){
 	//If this is the case, we don't need to coalesce any blocks. If the user was intelligent about how they chose the block size,
 	//this should be the case the majority of the time
 	if(num_bytes <= block_size){
+		//Lock the free list
+		pthread_mutex_lock(&free_mutex);
+
 		//Grab the head
 		allocated = free_list;
 
 		//"Delete" this from the free list
 		free_list = free_list->next;
 
+		//Unlock the free list
+		pthread_mutex_unlock(&free_mutex);
+
+		//Now we'll use the allocated list, so lock it
+		pthread_mutex_lock(&allocated_mutex);
+		
 		//Attach it to the allocated list
 		allocated->next = allocated_list;
 		
 		//modify the allocated list head
 		allocated_list = allocated;
+		
+		//All done so unlock
+		pthread_mutex_unlock(&allocated_mutex);
 
 	} else {
 		//If we get here, we're going to need to coalesce some blocks to have enough space
@@ -171,6 +183,9 @@ void* mempool_alloc(u_int32_t num_bytes){
 		//Figure out how many blocks we need to coalesce
 		u_int32_t blocks_needed = num_bytes / block_size + ((num_bytes % block_size == 0) ? 0 : 1);
 		
+		//We will be modifying the free_list, so lock
+		pthread_mutex_lock(&free_mutex);
+
 		//We need contiguous blocks, i.e, their memory addresses have to be one after the other
 		//This is not a guarantee in the free list, so we have to search until we find this
 		struct block* cursor = free_list;
@@ -208,6 +223,9 @@ void* mempool_alloc(u_int32_t num_bytes){
 		if(contiguous_blocks < blocks_needed){
 			printf("MEMPOOL_ERROR: Unable to allocated block of size %d bytes due to insufficient space.\n"
 						   "Either make the mempool larger, or free more space.\n", num_bytes);
+
+			//Unlock before erroring out
+			pthread_mutex_unlock(&free_mutex);
 			return NULL;
 		}
 
@@ -240,6 +258,9 @@ void* mempool_alloc(u_int32_t num_bytes){
 			previous->next = contiguous_chunk_tail->next;
 		}
 
+		//Done modifying the free list, so unlock
+		pthread_mutex_unlock(&free_mutex);
+
 		//Set this for later
 		contiguous_chunk_tail->next = NULL;
 
@@ -262,9 +283,15 @@ void* mempool_alloc(u_int32_t num_bytes){
 			free(temp);
 		}
 
+		//Modifying the allocated_list, so lock
+		pthread_mutex_lock(&allocated_mutex);
+
 		//Once we're here, we've successfully coalesced and removed everything, so we can add the head to the allocated_list
 		contiguous_chunk_head->next = allocated_list;
 		allocated_list = contiguous_chunk_head;
+
+		//All done so unlock
+		pthread_mutex_unlock(&allocated_mutex);
 
 		//Set this for our return
 		allocated = contiguous_chunk_head;
@@ -280,6 +307,8 @@ void* mempool_alloc(u_int32_t num_bytes){
 /**
  * "Free" the block pointed to by the mem_ptr. This isn't actually a free, all we do here is remove it from the allocated_list 
  * and attach it to the free list
+ *
+ * Free is thread safe
  */
 void mempool_free(void* ptr){
 	//Check we aren't freeing a null
@@ -296,6 +325,9 @@ void mempool_free(void* ptr){
 
 	//A reference to the block that we want to free
 	struct block* freed;
+
+	//Since we are modifying the allocated list, we need to lock
+	pthread_mutex_lock(&allocated_mutex);
 
 	//Search through the allocated list to find the pointer directly previous to this one
 	struct block* cursor = allocated_list;
@@ -329,6 +361,9 @@ void mempool_free(void* ptr){
 		//Remove this from the allocated list
 		cursor->next = freed->next;
 	}
+
+	//Now we're done with the allocated list, so we can unlock it for someone else to use
+	pthread_mutex_unlock(&allocated_mutex);
 
 	//The "tail" of the freed allocation
 	struct block* freed_tail;
@@ -366,10 +401,12 @@ void mempool_free(void* ptr){
 		freed_tail = intermediate;
 	}
 
+	//We will be modifying the free list, so we need to lock it
+	pthread_mutex_lock(&free_mutex);
+
 	//We now need to strategically add this back onto the free list. We want the free list to be as in order as possible according to
 	//the memory addresses of the blocks, in case we ever need to coalesce blocks
 	cursor = free_list;
-
 
 	//Special case -- insert at head if the head's address is higher than the freeds
 	if((u_int64_t)(cursor->ptr) > (u_int64_t)(freed->ptr)){
@@ -393,6 +430,9 @@ void mempool_free(void* ptr){
 		cursor->next = freed;
 		freed_tail->next = temp;
 	}
+
+	//All done so unlock
+	pthread_mutex_unlock(&free_mutex);
 
 	//Record that we freed these bytes
 	mempool_used -= bytes_freed;
@@ -441,6 +481,9 @@ void* mempool_realloc(void* ptr, u_int32_t num_bytes){
 		printf("MEMPOOL_ERROR: Attempt to realloc with size of 0 bytes. Invalid input.\n");
 	}
 
+	//We will be searching through a list, so be sure to lock
+	pthread_mutex_lock(&allocated_mutex);
+
 	//We first need to find this value in the allocated list
 	struct block* cursor = allocated_list;
 	struct block* realloc_target = NULL;
@@ -456,6 +499,9 @@ void* mempool_realloc(void* ptr, u_int32_t num_bytes){
 		//If we didn't find what we're after, advance the pointer
 		cursor = cursor->next;
 	}
+
+	//Unlock when done
+	pthread_mutex_unlock(&allocated_mutex);
 
 	//If the target is still NULL, that means we didn't find the block
 	if(realloc_target == NULL){

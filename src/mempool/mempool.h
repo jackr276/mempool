@@ -23,6 +23,8 @@
  *
  * NOTE: It is up to the caller to intelligently determine what an appropriate defualt block size is. Using too small
  * a default size leads to excessive coalescing, and too large a size leads to wasted memory
+ *
+ * THREAD_SAFE: NO
  */
 int mempool_init(u_int32_t size, u_int32_t default_block_size);
 
@@ -32,6 +34,8 @@ int mempool_init(u_int32_t size, u_int32_t default_block_size);
  *
  * NOTE: This will make all mem_ptrs invalid and prone to segmentation faults. If you are
  * calling this function, be sure you do not have any active mem_ptrs
+ *
+ * THREAD_SAFE: NO
  */
 int mempool_destroy();
 
@@ -66,6 +70,7 @@ void* mempool_realloc(void* ptr, u_int32_t num_bytes);
 /**
  * Free all of the memory in reserved by the mem_ptr region, and destroy
  * the mem_ptr itself
+ * THREAD_SAFE: YES
  */
 void mempool_free(void* ptr);
 

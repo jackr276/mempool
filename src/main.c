@@ -38,7 +38,6 @@ int main(){
 	}
 
 	mempool_free(ints);
-
 	
 	printf("Deallocating the entire memory pool\n");
 	//Destroy the mempool
