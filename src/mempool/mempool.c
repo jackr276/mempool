@@ -7,7 +7,6 @@
 #include "mempool.h"
 //For our thread safety and mutexes
 #include <pthread.h>
-#include <stdio.h>
 
 /**
  * Define a struct for a block of memory
@@ -27,9 +26,6 @@ struct block {
 
 //Overall size of the mempool
 static u_int32_t mempool_size;
-
-//The total bytes currently in use
-static u_int32_t mempool_used;
 
 //The default block size
 static u_int32_t block_size;
@@ -115,7 +111,6 @@ int mempool_init(u_int32_t size, u_int32_t default_block_size){
 
 	//Once we get here, every block will have been allocated
 	mempool_size = size;
-	mempool_used = 0;
 
 	//Initialize the mutexes
 	pthread_mutex_init(&free_mutex,  NULL);
@@ -143,12 +138,6 @@ void* mempool_alloc(u_int32_t num_bytes){
 	//Make sure we actually have blocks to give
 	if(free_list == NULL){
 		printf("MEMPOOL_ERROR: No available memory. You either have a memory leak, or you gave the memory pool too small an amount of memory on creation\n");
-		return NULL;
-	}
-
-	//This would also lead to an error that we may not catch before if we had to coalesce
-	if(mempool_used + num_bytes >= mempool_size){
-		printf("MEMPOOL_ERROR: Insufficient available memory. You either have a memory leak, or you gave the memory pool too small an amount of memory on creation\n");
 		return NULL;
 	}
 
@@ -303,8 +292,6 @@ void* mempool_alloc(u_int32_t num_bytes){
 		allocated = contiguous_chunk_head;
 	}
 
-	//If we get here, we were able to allocated, so increase the bytes used
-	mempool_used += allocated->size;
 	//Return the allocated block
 	return allocated->ptr;
 }
@@ -356,6 +343,8 @@ void mempool_free(void* ptr){
 		//If this somehow happened, the free is invalid
 		if(cursor == NULL){
 			printf("MEMPOOL_ERROR: Attempt to free a nonexistent pointer. Potential double free detected\n");
+			//Unlock before returning
+			pthread_mutex_unlock(&allocated_mutex);
 			return;
 		}
 
@@ -373,9 +362,6 @@ void mempool_free(void* ptr){
 
 	//The "tail" of the freed allocation
 	struct block* freed_tail;
-
-	//The bytes we will free
-	u_int32_t bytes_freed = freed->size;
 
 	//If the block size is equal, then freed and freed_tail are the same thing
 	if(freed->size == block_size){
@@ -439,9 +425,6 @@ void mempool_free(void* ptr){
 
 	//All done so unlock
 	pthread_mutex_unlock(&free_mutex);
-
-	//Record that we freed these bytes
-	mempool_used -= bytes_freed;
 }
 
 
@@ -587,7 +570,6 @@ int mempool_destroy(){
 
 	//Reset these values
 	mempool_size = 0;
-	mempool_used = 0;
 	
 	printf("Coalescing Occured: %d\n", num_coalesced);
 
