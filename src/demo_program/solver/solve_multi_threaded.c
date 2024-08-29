@@ -226,13 +226,13 @@ void solve(int N, struct state* start_state, struct state* goal_state){
 			}
 
 			//Cleanup the fringe and closed arrays
-			cleanup_fringe_closed(fringe, closed, solution_path, N);
+//			cleanup_fringe_closed(fringe, closed, solution_path, N);
 
 			//If we are in debug mode, print this path to the console
 			//Print the path
 			print_solution_path(solution_path, N, pathlen, num_unique_configs, time_spent_CPU);
 			//Cleanup the path
-			cleanup_solution_path(solution_path);
+//			cleanup_solution_path(solution_path);
 			//Return nothing, as it isn't used
 			return;
 		}
@@ -267,6 +267,6 @@ void solve(int N, struct state* start_state, struct state* goal_state){
 	printf("No solution.\n");
 
 	//Cleanup the fringe and closed arrays
-	cleanup_fringe_closed(fringe, closed, NULL, N);
+//	cleanup_fringe_closed(fringe, closed, NULL, N);
 	return;
 }

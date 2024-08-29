@@ -12,7 +12,7 @@
 
 
 int main(){
-	mempool_init(100 * MEGABYTE, sizeof(struct state));
+	mempool_init(50 * MEGABYTE, sizeof(struct state));
 
 	/*
 	int* ints = mempool_alloc(sizeof(int) * 15);

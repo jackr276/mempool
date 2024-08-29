@@ -487,8 +487,6 @@ void* mempool_realloc(void* ptr, u_int32_t num_bytes){
 		printf("MEMPOOL_ERROR: Attempt to realloc with size of 0 bytes. Invalid input.\n");
 	}
 
-	printf("Calling realloc\n");
-
 	//We will be searching through a list, so be sure to lock
 	pthread_mutex_lock(&allocated_mutex);
 
@@ -520,7 +518,6 @@ void* mempool_realloc(void* ptr, u_int32_t num_bytes){
 	//The user may have inadvertently tried to realloc when there already is enough space in the block. If this is the
 	//case, just return the pointer they gave without any fanfare
 	if(realloc_target->size >= num_bytes){
-		printf("Here\n");
 		return ptr;
 	}
 
@@ -592,7 +589,7 @@ int mempool_destroy(){
 	mempool_size = 0;
 	mempool_used = 0;
 	
-	printf("Coalesced blocks: %d\n", num_coalesced);
+	printf("Coalescing Occured: %d\n", num_coalesced);
 
 	num_coalesced = 0;
 
