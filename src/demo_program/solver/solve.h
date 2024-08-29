@@ -28,6 +28,6 @@ struct thread_params {
 
 
 //The solve function. In theory, this is the only thing that we should need to see from solver
-struct state* solve(int N, struct state* start_state, struct state* goal_state, int solver_mode);
+void solve(int N, struct state* start_state, struct state* goal_state);
 
 #endif /* SOLVER_H */

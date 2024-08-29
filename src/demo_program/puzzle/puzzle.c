@@ -14,7 +14,7 @@
  */
 void initialize_state(struct state* statePtr, const int N){
 	//Declare all of the pointers needed for each row
-	statePtr->tiles = (short*)malloc(sizeof(short) * N * N);
+	statePtr->tiles = (short*)mempool_alloc(sizeof(short) * N * N);
 	statePtr->predecessor = NULL;
 	statePtr->next = NULL;
 }
@@ -25,7 +25,7 @@ void initialize_state(struct state* statePtr, const int N){
  */
 void destroy_state(struct state* statePtr){
 	//We only need to free the tile pointer in this case
-	free(statePtr->tiles);
+	mempool_free(statePtr->tiles);
 }
 
 
@@ -320,7 +320,7 @@ void update_prediction_function(struct state* statePtr, const int N){
  */
 struct state* initialize_goal(const int N){
 	//Initial allocation
-	struct state* goal_state = (struct state*)malloc(sizeof(struct state));
+	struct state* goal_state = (struct state*)mempool_alloc(sizeof(struct state));
 	//Dynamically allocate the memory needed in the goal_state
 	initialize_state(goal_state, N);	
 
@@ -352,14 +352,14 @@ struct state* initialize_goal(const int N){
  */
 struct fringe* initialize_fringe(){
 	//Allocate memory for the fringe struct
-	struct fringe* fringe = (struct fringe*)malloc(sizeof(struct fringe));
+	struct fringe* fringe = (struct fringe*)mempool_alloc(sizeof(struct fringe));
 
 	//Initialize these values
 	fringe->fringe_max_size = ARRAY_START_SIZE;
 	fringe->next_fringe_index = 0;
 
 	//Allocate space for the heap
-	fringe->heap = (struct state**)malloc(sizeof(struct state*) * fringe->fringe_max_size);
+	fringe->heap = (struct state**)mempool_alloc(sizeof(struct state*) * fringe->fringe_max_size);
 
 	//Return a pointer to our fringe in memory
 	return fringe;
@@ -371,14 +371,14 @@ struct fringe* initialize_fringe(){
  */
 struct closed* initialize_closed(){
 	//Allocate memory for closed
-	struct closed* closed = (struct closed*)malloc(sizeof(struct closed));
+	struct closed* closed = (struct closed*)mempool_alloc(sizeof(struct closed));
 	
 	//Initialize these values
 	closed->closed_max_size = ARRAY_START_SIZE;
 	closed->next_closed_index = 0;
 
 	//Reserve space for the internal array
-	closed->array = (struct state**)malloc(sizeof(struct state*) * closed->closed_max_size);
+	closed->array = (struct state**)mempool_alloc(sizeof(struct state*) * closed->closed_max_size);
 
 	//Return the closed pointer
 	return closed;
@@ -395,7 +395,7 @@ void merge_to_closed(struct closed* closed, struct state* statePtr){
 		//Double closed max size
 		closed->closed_max_size *= 2;
 		//Reallocate space for closed
-		closed->array = (struct state**)realloc(closed->array, sizeof(struct state*) * closed->closed_max_size);
+		closed->array = (struct state**)mempool_realloc(closed->array, sizeof(struct state*) * closed->closed_max_size);
 	}
 
 	//Put curr_state into closed
@@ -434,7 +434,7 @@ void priority_queue_insert(struct fringe* fringe, struct state* statePtr){
 		//Just double this value
 		fringe->fringe_max_size *= 2;
 		//Reallocate fringe memory	
-		fringe->heap = (struct state**)realloc(fringe->heap, sizeof(struct state*) * fringe->fringe_max_size);
+		fringe->heap = (struct state**)mempool_realloc(fringe->heap, sizeof(struct state*) * fringe->fringe_max_size);
 	}
 
 	//Insert value at the very end
@@ -515,7 +515,7 @@ struct state* dequeue(struct fringe* fringe){
  */
 struct state* generate_start_config(const int complexity, const int N){
 	//Create the simplified state that we will use for generation
-	struct state* statePtr = (struct state*)malloc(sizeof(struct state));
+	struct state* statePtr = (struct state*)mempool_alloc(sizeof(struct state));
 	//Iniitialize the state with helper function
 	initialize_state(statePtr, N);
 
@@ -607,7 +607,7 @@ void check_repeating_fringe(struct fringe* fringe, struct state** statePtr, cons
 			//Properly tear down the dynamic array in the state to avoid memory leaks
 			destroy_state(*statePtr);
 			//Free the pointer to the state
-			free(*statePtr);
+			mempool_free(*statePtr);
 			//Set the pointer to be null as a warning
 			*statePtr = NULL;
 			break;
@@ -634,7 +634,7 @@ void check_repeating_closed(struct closed* closed, struct state** statePtr, cons
 		if(states_same(closed->array[i], *statePtr, N)){
 			//Free both the internal memory and the state pointer itself
 			destroy_state(*statePtr);
-			free(*statePtr);
+			mempool_free(*statePtr);
 			//Set to null as a warning
 			*statePtr = NULL;
 			//Break out of the loop and exit
@@ -702,13 +702,13 @@ void cleanup_fringe_closed(struct fringe* fringe, struct closed* closed, struct 
 	//cleanup fringe
 	for(int i = 0; i < fringe->next_fringe_index; i++){
 		destroy_state(fringe->heap[i]);
-		free(fringe->heap[i]);
+		mempool_free(fringe->heap[i]);
 	}
 
 	//Free the fringe array
-	free(fringe->heap);
+	mempool_free(fringe->heap);
 	//Free the fringe struct
-	free(fringe);
+	mempool_free(fringe);
 
 	//cleanup closed
 	for(int i = 0; i < closed->next_closed_index; i++){
@@ -717,14 +717,14 @@ void cleanup_fringe_closed(struct fringe* fringe, struct closed* closed, struct 
 		//so we must check here
 		if(in_solution_path(closed->array[i], solution_path, N) == 0){
 			destroy_state(closed->array[i]);
-			free(closed->array[i]);
+			mempool_free(closed->array[i]);
 		}
 	}
 
 	//Free the array of pointers
-	free(closed->array);
+	mempool_free(closed->array);
 	//Free the close struct
-	free(closed);
+	mempool_free(closed);
 }
 
 
@@ -748,8 +748,6 @@ void cleanup_solution_path(struct state* solution_path){
 		destroy_state(temp);
 		
 		//Free temp altogether
-		free(temp);
+		mempool_free(temp);
 	}
 }
-
-

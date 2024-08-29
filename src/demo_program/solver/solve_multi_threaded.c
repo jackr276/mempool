@@ -12,6 +12,7 @@
 #include <time.h>
 //For multi-threading functionality
 #include <pthread.h>
+#include "../../mempool/mempool.h"
 #include "solve.h"
 
 /**
@@ -31,7 +32,7 @@ static void* generator_worker(void* thread_params){
 	//Perform a left move if option is 0 and if possible
 	if(option == 0 && parameters->predecessor->zero_column > 0){
 		//Create the new state
-		moved = (struct state*)malloc(sizeof(struct state));
+		moved = (struct state*)mempool_alloc(sizeof(struct state));
 		//Dynamically allocate the space needed in the state
 		initialize_state(moved, N);
 		//Perform a deep copy from predecessor to successor
@@ -42,7 +43,7 @@ static void* generator_worker(void* thread_params){
 	//Perform a right move if option is 1 and if possible
 	} else if(option == 1 && parameters->predecessor->zero_column < N-1){
 		//Create the new state
-		moved = (struct state*)malloc(sizeof(struct state));
+		moved = (struct state*)mempool_alloc(sizeof(struct state));
 		//Dynamically allocate the space needed in the state
 		initialize_state(moved, N);
 		//Perform a deep copy from predecessor to successor
@@ -53,7 +54,7 @@ static void* generator_worker(void* thread_params){
 	//Perform a down move if option is 2 and if possible
 	} else if(option == 2 && parameters->predecessor->zero_row < N-1){
 		//Create the new state
-		moved = (struct state*)malloc(sizeof(struct state));
+		moved = (struct state*)mempool_alloc(sizeof(struct state));
 		//Dynamically allocate the space needed in the state
 		initialize_state(moved, N);
 		//Perform a deep copy from predecessor to successor
@@ -64,7 +65,7 @@ static void* generator_worker(void* thread_params){
 	//Perform an up move if option is 3 and if possible
 	} else if(option == 3 && parameters->predecessor->zero_row > 0){
 		//Create the new state
-		moved = (struct state*)malloc(sizeof(struct state));
+		moved = (struct state*)mempool_alloc(sizeof(struct state));
 		//Dynamically allocate the space needed in the state
 		initialize_state(moved, N);
 		//Perform a deep copy from predecessor to successor
@@ -104,7 +105,7 @@ static void generate_successors(struct fringe* fringe, struct closed* closed, st
 	//Create all 4 threads
 	for(int i = 0; i < 4; i++){
 		//Reserve space and allocate appropriate values in each thread_param
-		param_arr[i] = (struct thread_params*)malloc(sizeof(struct thread_params));
+		param_arr[i] = (struct thread_params*)mempool_alloc(sizeof(struct thread_params));
 		param_arr[i]->predecessor = predecessor;
 		//The option will tell the thread function what move to make
 		param_arr[i]->option = i;
@@ -125,7 +126,7 @@ static void generate_successors(struct fringe* fringe, struct closed* closed, st
 	for(int i = 0; i < 4; i++){
 		pthread_join(thread_arr[i], NULL);
 		//Free the memory from the parameter structure
-		free(param_arr[i]);
+		mempool_free(param_arr[i]);
 	}
 }
 
@@ -164,14 +165,13 @@ void print_solution_path(struct state* solution_path, const int N, int pathlen, 
  * is successful, it will print the resulting solution path to the console as well.  
  * For mode: 0 equals web client solve, 1 equals debug(CLI) mode
  */
-struct state* solve(int N, struct state* start_state, struct state* goal_state, int solver_mode){
+void solve(int N, struct state* start_state, struct state* goal_state){
 	//If we are in debug mode, we will start off by printing to the console
-	if(solver_mode == 1){
-		printf("\nInitial State:\n");
-		print_state(start_state, N, 0);
-		printf("Goal state\n");
-		print_state(goal_state, N, 0);
-	} 
+	printf("\nInitial State:\n");
+	print_state(start_state, N, 0);
+	printf("Goal state\n");
+	print_state(goal_state, N, 0);
+	 
 	
 
 	//Create the fringe and closed structues
@@ -229,17 +229,12 @@ struct state* solve(int N, struct state* start_state, struct state* goal_state, 
 			cleanup_fringe_closed(fringe, closed, solution_path, N);
 
 			//If we are in debug mode, print this path to the console
-			if(solver_mode == 1){
-				//Print the path
-				print_solution_path(solution_path, N, pathlen, num_unique_configs, time_spent_CPU);
-				//Cleanup the path
-				cleanup_solution_path(solution_path);
-				//Return nothing, as it isn't used
-				return NULL;
-			}
-
-			//We've found a solution, so the function should exit 
-			return solution_path;	
+			//Print the path
+			print_solution_path(solution_path, N, pathlen, num_unique_configs, time_spent_CPU);
+			//Cleanup the path
+			cleanup_solution_path(solution_path);
+			//Return nothing, as it isn't used
+			return;
 		}
 		
 		/**
@@ -260,7 +255,7 @@ struct state* solve(int N, struct state* start_state, struct state* goal_state, 
 		merge_to_closed(closed, curr_state);
 
 		//For very complex problems, print the iteration count to the console for a sanity check
-		if(solver_mode == 1 && iteration > 1 && iteration % 1000 == 0) {
+		if(iteration > 1 && iteration % 1000 == 0) {
 			printf("Iteration: %6d, %6d total unique states generated\n", iteration, num_unique_configs);
 		}
 		
@@ -273,5 +268,5 @@ struct state* solve(int N, struct state* start_state, struct state* goal_state, 
 
 	//Cleanup the fringe and closed arrays
 	cleanup_fringe_closed(fringe, closed, NULL, N);
-	return NULL;
+	return;
 }
