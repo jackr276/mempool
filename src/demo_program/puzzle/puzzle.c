@@ -352,14 +352,14 @@ struct state* initialize_goal(const int N){
  */
 struct fringe* initialize_fringe(){
 	//Allocate memory for the fringe struct
-	struct fringe* fringe = (struct fringe*)mempool_alloc(sizeof(struct fringe));
+	struct fringe* fringe = (struct fringe*)malloc(sizeof(struct fringe));
 
 	//Initialize these values
 	fringe->fringe_max_size = ARRAY_START_SIZE;
 	fringe->next_fringe_index = 0;
 
 	//Allocate space for the heap
-	fringe->heap = (struct state**)mempool_alloc(sizeof(struct state*) * fringe->fringe_max_size);
+	fringe->heap = (struct state**)malloc(sizeof(struct state*) * fringe->fringe_max_size);
 
 	//Return a pointer to our fringe in memory
 	return fringe;
@@ -371,14 +371,14 @@ struct fringe* initialize_fringe(){
  */
 struct closed* initialize_closed(){
 	//Allocate memory for closed
-	struct closed* closed = (struct closed*)mempool_alloc(sizeof(struct closed));
+	struct closed* closed = (struct closed*)malloc(sizeof(struct closed));
 	
 	//Initialize these values
 	closed->closed_max_size = ARRAY_START_SIZE;
 	closed->next_closed_index = 0;
 
 	//Reserve space for the internal array
-	closed->array = (struct state**)mempool_alloc(sizeof(struct state*) * closed->closed_max_size);
+	closed->array = (struct state**)malloc(sizeof(struct state*) * closed->closed_max_size);
 
 	//Return the closed pointer
 	return closed;
@@ -395,7 +395,7 @@ void merge_to_closed(struct closed* closed, struct state* statePtr){
 		//Double closed max size
 		closed->closed_max_size *= 2;
 		//Reallocate space for closed
-		closed->array = (struct state**)mempool_realloc(closed->array, sizeof(struct state*) * closed->closed_max_size);
+		closed->array = (struct state**)realloc(closed->array, sizeof(struct state*) * closed->closed_max_size);
 	}
 
 	//Put curr_state into closed
@@ -434,7 +434,7 @@ void priority_queue_insert(struct fringe* fringe, struct state* statePtr){
 		//Just double this value
 		fringe->fringe_max_size *= 2;
 		//Reallocate fringe memory	
-		fringe->heap = (struct state**)mempool_realloc(fringe->heap, sizeof(struct state*) * fringe->fringe_max_size);
+		fringe->heap = (struct state**)realloc(fringe->heap, sizeof(struct state*) * fringe->fringe_max_size);
 	}
 
 	//Insert value at the very end
