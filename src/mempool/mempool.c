@@ -7,6 +7,7 @@
 #include "mempool.h"
 //For our thread safety and mutexes
 #include <pthread.h>
+#include <sys/types.h>
 
 /**
  * Define a struct for a block of memory
@@ -43,7 +44,8 @@ static pthread_mutex_t free_mutex;
 static pthread_mutex_t allocated_mutex;
 
 //The entire monolithic memory pool
-static void* memory_pool = NULL;
+static void* memory_pool_original = NULL;
+static void* memory_pool_aligned = NULL;
 
 
 /**
@@ -71,10 +73,14 @@ int mempool_init(u_int32_t size, u_int32_t default_block_size){
 	num_coalesced = 0;
 
 	//Allocate the entire monolithic memory pool
-	memory_pool = malloc(size);
+	memory_pool_original = malloc(size);
+
+	//Align the memory pool
+	u_int64_t alignment = (u_int64_t)memory_pool_original % 8;
+	memory_pool_aligned = memory_pool_original + alignment;
 
 	//Store the block size
- 	block_size = default_block_size;
+ 	block_size = default_block_size + default_block_size % 8;
 	
 	//Determine how many blocks we need to allocated
 	u_int32_t num_blocks = size / block_size; 
@@ -90,7 +96,7 @@ int mempool_init(u_int32_t size, u_int32_t default_block_size){
 		//Reserve space for the block metadata
 		current = (struct block*)malloc(sizeof(struct block));
 		//"Allocate" the memory as an offset of the pool start pointer
-		current->ptr = memory_pool + offset * block_size; 
+		current->ptr = memory_pool_aligned + offset * block_size; 
 		//Initially everything has the same block size
 		current->size = block_size;
 		//Set to be NULL
@@ -371,7 +377,7 @@ void mempool_free(void* ptr){
 		struct block* intermediate = freed;
 
 		//We now need to make new blocks
-		for(u_int16_t i = 1; i < num_blocks; i++){
+		for(u_int32_t i = 1; i < num_blocks; i++){
 			//Create a new block
 			struct block* block = (struct block*)malloc(sizeof(struct block));
 			block->size = block_size;
@@ -560,7 +566,7 @@ int mempool_destroy(){
 	allocated_list = NULL;
 
 	//Free the entire mempool
-	free(memory_pool);
+	free(memory_pool_original);
 
 	//Reset these values
 	mempool_size = 0;
