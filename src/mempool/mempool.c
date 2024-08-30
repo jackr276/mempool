@@ -571,7 +571,8 @@ int mempool_destroy(){
 	//Reset these values
 	mempool_size = 0;
 	
-	printf("Coalescing Occured: %d\n", num_coalesced);
+	//UNCOMMENT ME if you want to figure out how many times blocks coalesced
+	//printf("Coalescing Occured: %d\n", num_coalesced);
 
 	num_coalesced = 0;
 
