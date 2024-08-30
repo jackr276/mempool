@@ -74,7 +74,7 @@ int mempool_init(u_int32_t size, u_int32_t default_block_size){
 	memory_pool = malloc(size);
 
 	//Store the block size
-	block_size = default_block_size;
+ 	block_size = default_block_size;
 	
 	//Determine how many blocks we need to allocated
 	u_int32_t num_blocks = size / block_size; 
