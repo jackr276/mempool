@@ -59,4 +59,13 @@ void mempool_free(void* ptr)
 ```
 THREAD SAFE: YES
 
-The `mempool_free` function releases the memory chunk that is pointed to by `ptr`. If `ptr` was never allocated, the function will print a debug message alerting the user about a potential double free. This function is thread safe.
+The `mempool_free` function releases the memory chunk that is pointed to by `ptr`. If `ptr` was never allocated, the function will print a debug message alerting the user about a potential double free. `mempool_free` automatically defragments the allocated memory, leading to improvements over regular free. This function is thread safe.
+
+## Efficiency of mempool
+**mempool** is not *that* different from how malloc works, but it does reduce system calls. As said in the introduction, the use of this tool will only cause a noticeable speedup if you are malloc'ing and free'ing tens or hundreds of thousands of times. The main advantage of this tool is in the reduction of system calls/memory page access, and the elimination of heap fragmentation. I've included the asymptotic time complexity below:
+
+- Allocating: O(1) for allocating a block less than or equal to `default_block_size`, O(n) for allocating a block greater than `default_block_size`, because of the need for coalescing of blocks.
+- Releasing: O(n) for freeing blocks. This O(n) comes from the automatic defragmentation of the block allocated when `malloc_free` is called.
+
+## Using mempool
+**mempool** is designed to be used intelligently by a user who has a deep understanding of the memory needs and characteristics of their project, and gives you all the power. As such, making the right choices when it comes to default block size is very important. There is a [demo branch](https://github.com/jackr276/mempool/tree/demo) that shows the use of mempool in an A* solver. I would encourage anyone wishing to use it to look at the specific places where mempool is used, and the places where it is not used. The main branch just contains the header file `mempool.h` and the implementation file `mempool.c` that need to be included in your project if you wish to use mempool. `mempool.c` will need to be on the build path if you have it in your project. 
