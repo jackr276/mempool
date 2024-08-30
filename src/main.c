@@ -14,34 +14,7 @@
 int main(){
 	mempool_init(500000 * sizeof(struct state), sizeof(struct state));
 
-	/*
-	int* ints = mempool_alloc(sizeof(int) * 15);
-
-	
-	for(int i = 0; i < 15; i++){
-		ints[i] = i;
-	}
-
-	printf("Before realloc\n");
-
-	for(int i = 0; i < 15; i++){
-		printf("%d\n", ints[i]);
-	}
-
-	ints = (int*)mempool_realloc(ints, sizeof(int) * 30);
-
-	for(int i = 15; i < 30; i++){
-		ints[i] = i;
-	}
-
-	printf("After realloc\n");
-
-	for(int i = 0; i < 30; i++){
-		printf("%d\n", ints[i]);
-	}
-
-	*/
-	struct state* initial = generate_start_config(200, 4);
+	struct state* initial = generate_start_config(2900, 4);
 	struct state* goal = initialize_goal(4);
 
 	solve(4, initial, goal);

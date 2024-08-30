@@ -129,12 +129,6 @@ int mempool_init(u_int32_t size, u_int32_t default_block_size){
  * chunks of memory that are larger than the block size, you should consider upping the block size on creation.
  */
 void* mempool_alloc(u_int32_t num_bytes){
-	//Simple error checking but just in case
-	if(num_bytes >= mempool_size){
-		printf("MEMPOOL_ERROR: Attempt to allocate a number of bytes greater than or equal to the entire memory pool size\n");
-		return NULL;
-	}
-	 
 	//Make sure we actually have blocks to give
 	if(free_list == NULL){
 		printf("MEMPOOL_ERROR: No available memory. You either have a memory leak, or you gave the memory pool too small an amount of memory on creation\n");
