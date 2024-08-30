@@ -7,7 +7,6 @@
 #include "mempool.h"
 //For our thread safety and mutexes
 #include <pthread.h>
-#include <sys/types.h>
 
 /**
  * Define a struct for a block of memory
