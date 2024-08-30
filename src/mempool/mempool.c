@@ -13,15 +13,15 @@
  * Define a struct for a block of memory
  */
 struct block {
+	//The pointer that is actually usable
+	void* ptr;
+
 	//------------ Block metadata --------------
 	//For the linked list functionality
 	struct block* next;
 	//The size may change if we coalesce
 	u_int32_t size;
 	//------------------------------------------
-	
-	//The pointer that is actually usable
-	void* ptr;
 };
 
 
