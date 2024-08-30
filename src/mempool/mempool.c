@@ -12,13 +12,13 @@
 /**
  * Define a struct for a block of memory
  */
-struct block {
+struct mem_block_t {
 	//The pointer that is actually usable
 	void* ptr;
 
 	//------------ Block metadata --------------
 	//For the linked list functionality
-	struct block* next;
+	struct mem_block_t* next;
 	//The size may change if we coalesce
 	u_int32_t size;
 	//------------------------------------------
@@ -32,10 +32,10 @@ static u_int32_t mempool_size;
 static u_int32_t block_size;
 
 //A list of all free blocks
-static struct block* free_list = NULL;
+static struct mem_block_t* free_list = NULL;
 
 //A list of all allocated blocks
-static struct block* allocated_list = NULL;
+static struct mem_block_t* allocated_list = NULL;
 //Keep track of coalesced blocks
 static u_int32_t num_coalesced;
 
@@ -86,15 +86,15 @@ int mempool_init(u_int32_t size, u_int32_t default_block_size){
 	u_int32_t num_blocks = size / block_size; 
 
 	//Current block pointer
-	struct block* current;
+	struct mem_block_t* current;
 
-	struct block* free_list_tail = NULL;
+	struct mem_block_t* free_list_tail = NULL;
 	 
 	//Go through and allocate every block
 	//Note -- these blocks are in order in the memory(block 1's pointer ends and block 2's pointer begins)
 	for(u_int32_t offset = 0; offset < num_blocks; offset++){
 		//Reserve space for the block metadata
-		current = (struct block*)malloc(sizeof(struct block));
+		current = (struct mem_block_t*)malloc(sizeof(struct mem_block_t));
 		//"Allocate" the memory as an offset of the pool start pointer
 		current->ptr = memory_pool_aligned + offset * block_size; 
 		//Initially everything has the same block size
@@ -142,7 +142,7 @@ void* mempool_alloc(u_int32_t num_bytes){
 	}
 
 	//Our allocated block
-	struct block* allocated;
+	struct mem_block_t* allocated;
 
 	//If this is the case, we don't need to coalesce any blocks. If the user was intelligent about how they chose the block size,
 	//this should be the case the majority of the time
@@ -183,13 +183,13 @@ void* mempool_alloc(u_int32_t num_bytes){
 
 		//We need contiguous blocks, i.e, their memory addresses have to be one after the other
 		//This is not a guarantee in the free list, so we have to search until we find this
-		struct block* cursor = free_list;
+		struct mem_block_t* cursor = free_list;
 		//Store the address of the previous pointer 
 		u_int64_t previous_address = (u_int64_t)(cursor->ptr);
 		//We already have 1 contiguous block by default
 		u_int16_t contiguous_blocks = 1;
 		//By default, the cursor start is the very start of our continuous blocks
-		struct block* contiguous_chunk_head = cursor;
+		struct mem_block_t* contiguous_chunk_head = cursor;
 
 		//Advance the pointer since we already dealt with the first one
 		cursor = cursor->next;
@@ -228,7 +228,7 @@ void* mempool_alloc(u_int32_t num_bytes){
 		//contiguous_chunk_head
 		
 		//Let's find the tail so that we can easily remove
-		struct block* contiguous_chunk_tail = contiguous_chunk_head;
+		struct mem_block_t* contiguous_chunk_tail = contiguous_chunk_head;
 
 		//First find the tail of the chunk
 		for(u_int16_t i = 1; i < contiguous_blocks; i++){
@@ -242,7 +242,7 @@ void* mempool_alloc(u_int32_t num_bytes){
 			free_list = contiguous_chunk_tail->next;
 		} else {
 			//Otherwise, we have to traverse to find the block before the head of the contiguous chunk
-			struct block* previous = free_list;
+			struct mem_block_t* previous = free_list;
 
 			//Keep searching until we have the block directly before the chunk head
 			while((u_int64_t)(previous->next->ptr) != (u_int64_t)(contiguous_chunk_head->ptr)){
@@ -265,8 +265,8 @@ void* mempool_alloc(u_int32_t num_bytes){
 		contiguous_chunk_head->size *= blocks_needed;
 
 		//Prepare to delete all of the other coalesced blocks
-		struct block* needs_freeing = contiguous_chunk_head->next;
-		struct block* temp;
+		struct mem_block_t* needs_freeing = contiguous_chunk_head->next;
+		struct mem_block_t* temp;
 
 		//Now we can just free all of the other blocks, so their memory regions, which no belong to the contiguous_chunk_head, can no longer be used
 		//Free all of the blocks blocks after the head
@@ -317,13 +317,13 @@ void mempool_free(void* ptr){
 	}
 
 	//A reference to the block that we want to free
-	struct block* freed;
+	struct mem_block_t* freed;
 
 	//Since we are modifying the allocated list, we need to lock
 	pthread_mutex_lock(&allocated_mutex);
 
 	//Search through the allocated list to find the pointer directly previous to this one
-	struct block* cursor = allocated_list;
+	struct mem_block_t* cursor = allocated_list;
 
 	//SPECIAL CASE: the head of the allocated list is the one we want to free
 	if((u_int64_t)(cursor->ptr) == (u_int64_t)(ptr)){
@@ -361,7 +361,7 @@ void mempool_free(void* ptr){
 	pthread_mutex_unlock(&allocated_mutex);
 
 	//The "tail" of the freed allocation
-	struct block* freed_tail;
+	struct mem_block_t* freed_tail;
 
 	//If the block size is equal, then freed and freed_tail are the same thing
 	if(freed->size == block_size){
@@ -374,12 +374,12 @@ void mempool_free(void* ptr){
 		freed->size = block_size;
 
 		//This means that we have a coalesced block, so we're going to need to "uncoalesce" it
-		struct block* intermediate = freed;
+		struct mem_block_t* intermediate = freed;
 
 		//We now need to make new blocks
 		for(u_int32_t i = 1; i < num_blocks; i++){
 			//Create a new block
-			struct block* block = (struct block*)malloc(sizeof(struct block));
+			struct mem_block_t* block = (struct mem_block_t*)malloc(sizeof(struct mem_block_t));
 			block->size = block_size;
 			//Assign the pointer to have the appropraite offset
 			block->ptr = freed->ptr + block_size * i;
@@ -416,7 +416,7 @@ void mempool_free(void* ptr){
 		//inbetween the cursor and what comes after it
 	
 		//Save the cursor's next 
-		struct block* temp = cursor->next;
+		struct mem_block_t* temp = cursor->next;
 
 		//Insert freed inbetween
 		cursor->next = freed;
@@ -474,8 +474,8 @@ void* mempool_realloc(void* ptr, u_int32_t num_bytes){
 	pthread_mutex_lock(&allocated_mutex);
 
 	//We first need to find this value in the allocated list
-	struct block* cursor = allocated_list;
-	struct block* realloc_target = NULL;
+	struct mem_block_t* cursor = allocated_list;
+	struct mem_block_t* realloc_target = NULL;
 
 	//Keep searching through the list until we find what we're looking for
 	while(cursor != NULL){
@@ -532,8 +532,8 @@ int mempool_destroy(){
 	}
 
 	//First deallocate the entire free list
-	struct block* current = free_list;
-	struct block* temp;
+	struct mem_block_t* current = free_list;
+	struct mem_block_t* temp;
 
 	//Walk the list
 	while(current != NULL){
