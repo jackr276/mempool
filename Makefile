@@ -13,7 +13,7 @@ OUT = ./out
 all: $(PROGS)
 
 mempool_demo:
-	$(CC) $(CFLAGS) ./src/main.c $(INC) -o $(OUT)/test
+	$(CC) $(CFLAGS) ./src/main.c $(INCLUDE) -o $(OUT)/test
 
 test:
 	$(OUT)/test
