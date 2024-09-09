@@ -1,0 +1,21 @@
+name: mempool CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: build
+      run: make
+    - name: test run
+      run: make test
+    - name: clean
+      run: make clean
