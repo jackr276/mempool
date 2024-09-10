@@ -1,11 +1,11 @@
 /**
- * Author: Jack Robbins
- * This tester/demo program demonstrates a simple way of using mempool
+ * Author: Jack Robbins This tester/demo program demonstrates a simple way of using mempool
  */
 
 //Include the header file
 #include "./mempool/mempool.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 
 /**
@@ -17,6 +17,10 @@ typedef struct {
 } mempool_sample_struct_t;
 
 
+
+/**
+ * A whole demo program that shows the use of all of the mempool API functions
+ */
 int main(){
 	printf("Testing Mempool\n");
 	
@@ -30,6 +34,8 @@ int main(){
 	 * the block size, so if you aren't doing this, you will not see any performance boost over malloc
 	 */
 	mempool_init(500*KILOBYTE, sizeof(mempool_sample_struct_t));
+
+	printf("Testng mempool alloc. Allocating 500 sample structs.\n");
 
 	//Hold our pointers
 	mempool_sample_struct_t* structs[500];
@@ -54,8 +60,26 @@ int main(){
 		structs[i]->d = 4e10;
 	}
 
+	//Let's look at a random struct to make sure its actually there
+	srand(54);
+	u_int16_t r = rand() % 54;
+	printf("Randomly viewing a struct at index: %u", r);
 
+	printf("Struct at index: %u\n \tstruct->array[0] = 3 == struct->array[0] = %u\n", r, structs[r]->array[0]);
+	printf("\tstruct->array[1] = 5 == struct->array[1] = %u\n", structs[r]->array[1]);
+	printf("\tstruct->d = 4e10 == struct->d = %e\n", structs[r]->d);
 
+	printf("Freeing all sample structs.\n");
+	/**
+	 * Using mempool_free in a loop
+	 */
+	for(u_int16_t i = 0; i < 500; i++){
+		/**
+		 * Here we can see why we must keep track of the pointers. To free them, we can simply call mempool_free in the
+		 * same way that we'd call regular free
+		 */
+		mempool_free(structs[i]);
+	}
 
 	printf("Destroying the mempool\n");
 	/**
