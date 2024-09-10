@@ -12,7 +12,7 @@
  * A sample struct for us to use in testing.
  */
 typedef struct {
-	int array[3];
+	int array[2];
 	double d;
 } mempool_sample_struct_t;
 
@@ -31,7 +31,33 @@ int main(){
 	 */
 	mempool_init(500*KILOBYTE, sizeof(mempool_sample_struct_t));
 
+	//Hold our pointers
+	mempool_sample_struct_t* structs[500];
 
+	/**
+	 * Using mempool_alloc in a loop
+	 */
+	for(u_int16_t i = 0; i < 500; i++){
+		/**
+		 * Mempool allocate works the exact same way as regular malloc from a user's perspective. However, I will once again
+		 * reiterate that the "num_bytes" field should be less than or equal to the default_block_size in MOST cases. If this is not
+		 * the case, mempool will coalesce blocks, which is an expensive operation
+		 *
+		 * Notice how we are saving the pointers here. This is the exact same as malloc, where you must keep track of what you allocated, 
+		 * or you will suffer a memory leak. Mempool is not garbage collected, so all memory allocated is your responsibility until mempool free is called
+		 */
+		structs[i] = (mempool_sample_struct_t*)mempool_alloc(sizeof(mempool_sample_struct_t));
+
+		//Store some junk data to demonstrate
+		structs[i]->array[0] = 3;
+		structs[i]->array[1] = 5;
+		structs[i]->d = 4e10;
+	}
+
+
+
+
+	printf("Destroying the mempool\n");
 	/**
 	 * Teardown
 	 *
