@@ -70,6 +70,7 @@ int main(){
 	printf("\tstruct->d = 4e10 == struct->d = %e\n", structs[r]->d);
 
 	printf("Freeing all sample structs.\n");
+
 	/**
 	 * Using mempool_free in a loop
 	 */
@@ -80,6 +81,34 @@ int main(){
 		 */
 		mempool_free(structs[i]);
 	}
+
+
+	printf("Demonstrating mempool_calloc() and coalescing of blocks.\n");
+	/**
+	 * To demonstrate mempool_calloc and the nature of coalescing blocks all at once, I will call mempool_calloc 
+	 * and reserve a size that is larger than the default block size. As a reminder, this is allowed and supported,
+	 * but if you find yourself doing this a lot, you're not using mempool correctly
+	 */
+	int* int_arr = (int*)mempool_calloc(40, sizeof(int));
+
+	printf("After mempool_calloc() and initializing:\n");
+	//Fill it up for the sake of demonstration
+	for(int i = 0; i < 40; i++){
+		*(int_arr + i) = i;
+		printf("int_arr[%d]: %d\n", i, int_arr[i]);
+	}
+
+	/**
+	 * To demonstrate mempool_realloc(), we will realloc() this block to have 10 additional ints in it. Mempool_realloc()
+	 * works the same way externally as realloc
+	 */
+	int_arr = (int*)mempool_realloc(int_arr, 50 * sizeof(int));
+
+	//Add the other ints in
+	for(int i = 40; i < 50; i++){
+		*(int_arr + i) = i;
+	}
+
 
 	printf("Destroying the mempool\n");
 	/**
