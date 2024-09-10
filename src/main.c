@@ -89,26 +89,39 @@ int main(){
 	 * and reserve a size that is larger than the default block size. As a reminder, this is allowed and supported,
 	 * but if you find yourself doing this a lot, you're not using mempool correctly
 	 */
-	int* int_arr = (int*)mempool_calloc(40, sizeof(int));
+	u_int16_t* int_arr = (u_int16_t*)mempool_calloc(40, sizeof(u_int16_t));
 
-	printf("After mempool_calloc() and initializing:\n");
+	printf("Array after mempool_calloc() and initializing:\n");
 	//Fill it up for the sake of demonstration
-	for(int i = 0; i < 40; i++){
+	for(u_int16_t i = 0; i < 40; i++){
 		*(int_arr + i) = i;
-		printf("int_arr[%d]: %d\n", i, int_arr[i]);
+		printf("\tint_arr[%d]: %d\n", i, int_arr[i]);
 	}
 
 	/**
 	 * To demonstrate mempool_realloc(), we will realloc() this block to have 10 additional ints in it. Mempool_realloc()
 	 * works the same way externally as realloc
 	 */
-	int_arr = (int*)mempool_realloc(int_arr, 50 * sizeof(int));
+	int_arr = (u_int16_t*)mempool_realloc(int_arr, 50 * sizeof(u_int16_t));
 
 	//Add the other ints in
-	for(int i = 40; i < 50; i++){
+	for(u_int16_t i = 40; i < 50; i++){
 		*(int_arr + i) = i;
 	}
 
+	printf("Realloc'd array:\n");
+
+	//Print out the array to demonstrate mempool_realloc()
+	for(u_int16_t i = 0; i < 50; i++){
+		printf("\tint_arr[%d]: %d\n", i, int_arr[i]);
+	}
+
+	/**
+	 * When we're done, we do have to free the block. Mempool supports 
+	 * freeing coalesced blocks as well, so again we just use this like regular
+	 * free
+	 */
+	mempool_free(int_arr);
 
 	printf("Destroying the mempool\n");
 	/**
