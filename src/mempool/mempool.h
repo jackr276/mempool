@@ -17,6 +17,56 @@
 #define MEGABYTE 1048576
 #define GIGABYTE 1073741824
 
+//A struct for our mempool
+typedef struct mempool_t mempool_t;
+typedef struct mem_block_t mem_block_t;
+
+/**
+ * Define a struct for a block of memory
+ */
+struct mem_block_t {
+	//The pointer that is actually usable
+	void* ptr;
+
+	//------------ Block metadata --------------
+	//For the linked list functionality
+	struct mem_block_t* next;
+	//The size may change if we coalesce
+	u_int32_t size;
+	//------------------------------------------
+};
+
+
+/**
+ * A struct that holds all data needed for a mempool. This will be passed through
+ * all mempool method
+ */
+struct mempool_t {
+	//The size of the mempool: Max-size: 2^32 - 1 bytes
+	u_int32_t mempool_size;
+
+	//The default block size of the mempool
+	u_int32_t block_size;
+
+	//A list of all free blocks
+	mem_block_t* free_list;
+	
+	//A list of all allocated blocks
+	mem_block_t* allocated_list;
+
+	//Keep track of coalesced blocks
+	u_int32_t num_coalesced;
+	
+	//For thread safety
+	pthread_mutex_t free_mutex;
+	pthread_mutex_t allocated_mutex;
+
+	//The entire monolithic memory pool
+	void* memory_pool_original;
+	void* memory_pool_aligned;
+};
+
+
 /**
  * Initialize the entire memory pool to be of overall size of "size" bytes, with chunks of size
  * default_block_size
@@ -26,7 +76,7 @@
  *
  * THREAD_SAFE: NO
  */
-int mempool_init(u_int32_t size, u_int32_t default_block_size);
+mempool_t* mempool_init(u_int32_t size, u_int32_t default_block_size);
 
 
 /**
@@ -37,7 +87,7 @@ int mempool_init(u_int32_t size, u_int32_t default_block_size);
  *
  * THREAD_SAFE: NO
  */
-int mempool_destroy();
+int mempool_destroy(mempool_t* mempool);
 
 
 /**
@@ -49,13 +99,13 @@ int mempool_destroy();
  * NOTE: A reminder that this memory allocator gives you the power to choose the block size. If you are consistently allocating
  * chunks of memory that are larger than the block size, you should consider upping the block size on creation.
  */
-void* mempool_alloc(u_int32_t num_bytes);
+void* mempool_alloc(mempool_t* mempool, u_int32_t num_bytes);
 
 
 /**
  * Allocate num_members elements of size size each, all initialized to be 0 
  */
-void* mempool_calloc(u_int32_t num_members, size_t size);
+void* mempool_calloc(mempool_t* mempool, u_int32_t num_members, size_t size);
 
 
 /**
@@ -64,7 +114,7 @@ void* mempool_calloc(u_int32_t num_members, size_t size);
  * NOTE: num_bytes must be greater than the number of bytes previously allocated to the mem_ptr. If memory
  * smashing is detected, an error will be thrown
  */
-void* mempool_realloc(void* ptr, u_int32_t num_bytes);
+void* mempool_realloc(mempool_t* mempool, void* ptr, u_int32_t num_bytes);
 
 
 /**
@@ -72,7 +122,7 @@ void* mempool_realloc(void* ptr, u_int32_t num_bytes);
  * the mem_ptr itself
  * THREAD_SAFE: YES
  */
-void mempool_free(void* ptr);
+void mempool_free(mempool_t* mempool, void* ptr);
 
 
 #endif /* MEMPOOL_H */

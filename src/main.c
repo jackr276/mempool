@@ -33,7 +33,7 @@ int main(){
 	 * size of that struct. Remember, the entire point of using this tool is to allow you to choose
 	 * the block size, so if you aren't doing this, you will not see any performance boost over malloc
 	 */
-	mempool_init(500*KILOBYTE, sizeof(mempool_sample_struct_t));
+	mempool_t* sample = mempool_init(500*KILOBYTE, sizeof(mempool_sample_struct_t));
 
 	printf("Testng mempool alloc. Allocating 500 sample structs.\n");
 
@@ -52,7 +52,7 @@ int main(){
 		 * Notice how we are saving the pointers here. This is the exact same as malloc, where you must keep track of what you allocated, 
 		 * or you will suffer a memory leak. Mempool is not garbage collected, so all memory allocated is your responsibility until mempool free is called
 		 */
-		structs[i] = (mempool_sample_struct_t*)mempool_alloc(sizeof(mempool_sample_struct_t));
+		structs[i] = (mempool_sample_struct_t*)mempool_alloc(sample, sizeof(mempool_sample_struct_t));
 
 		//Store some junk data to demonstrate
 		structs[i]->array[0] = 3;
@@ -79,7 +79,7 @@ int main(){
 		 * Here we can see why we must keep track of the pointers. To free them, we can simply call mempool_free in the
 		 * same way that we'd call regular free
 		 */
-		mempool_free(structs[i]);
+		mempool_free(sample, structs[i]);
 	}
 
 
@@ -89,7 +89,7 @@ int main(){
 	 * and reserve a size that is larger than the default block size. As a reminder, this is allowed and supported,
 	 * but if you find yourself doing this a lot, you're not using mempool correctly
 	 */
-	u_int16_t* int_arr = (u_int16_t*)mempool_calloc(40, sizeof(u_int16_t));
+	u_int16_t* int_arr = (u_int16_t*)mempool_calloc(sample, 40, sizeof(u_int16_t));
 
 	printf("Array after mempool_calloc() and initializing:\n");
 	//Fill it up for the sake of demonstration
@@ -102,7 +102,7 @@ int main(){
 	 * To demonstrate mempool_realloc(), we will realloc() this block to have 10 additional ints in it. Mempool_realloc()
 	 * works the same way externally as realloc
 	 */
-	int_arr = (u_int16_t*)mempool_realloc(int_arr, 50 * sizeof(u_int16_t));
+	int_arr = (u_int16_t*)mempool_realloc(sample, int_arr, 50 * sizeof(u_int16_t));
 
 	//Add the other ints in
 	for(u_int16_t i = 40; i < 50; i++){
@@ -121,7 +121,7 @@ int main(){
 	 * freeing coalesced blocks as well, so again we just use this like regular
 	 * free
 	 */
-	mempool_free(int_arr);
+	mempool_free(sample, int_arr);
 
 	printf("Destroying the mempool\n");
 	/**
@@ -130,7 +130,7 @@ int main(){
 	 * When we're done, we have to destroy the mempool. This process is COMPLETELY DESTRUCTIVE. If you still
 	 * had any pointers that came from mempool, they are now "dangling" and a hazard, so be careful
 	 */
-	mempool_destroy();
+	mempool_destroy(sample);
 
 	return 0;
 }
