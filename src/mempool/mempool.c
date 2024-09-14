@@ -300,7 +300,9 @@ void mempool_free(mempool_t* mempool, void* ptr){
 	register struct mem_block_t* freed;
 
 	//Since we are modifying the allocated list, we need to lock
-	pthread_mutex_lock(&(mempool->allocated_mutex));
+	if(thread_safe_req){
+		pthread_mutex_lock(&(mempool->allocated_mutex));
+	}
 
 	//Search through the allocated list to find the pointer directly previous to this one
 	register struct mem_block_t* cursor = mempool->allocated_list;
@@ -338,7 +340,9 @@ void mempool_free(mempool_t* mempool, void* ptr){
 	}
 
 	//Now we're done with the allocated list, so we can unlock it for someone else to use
-	pthread_mutex_unlock(&(mempool->allocated_mutex));
+	if(thread_safe_req){
+		pthread_mutex_unlock(&(mempool->allocated_mutex));
+	}
 
 	//The "tail" of the freed allocation
 	register struct mem_block_t* freed_tail;
@@ -374,7 +378,9 @@ void mempool_free(mempool_t* mempool, void* ptr){
 	}
 
 	//We will be modifying the free list, so we need to lock it
-	pthread_mutex_lock(&(mempool->free_mutex));
+	if(thread_safe_req){
+		pthread_mutex_lock(&(mempool->free_mutex));
+	}
 
 	//We now need to strategically add this back onto the free list. We want the free list to be as in order as possible according to
 	//the memory addresses of the blocks, in case we ever need to coalesce blocks
@@ -404,7 +410,9 @@ void mempool_free(mempool_t* mempool, void* ptr){
 	}
 
 	//All done so unlock
-	pthread_mutex_unlock(&(mempool->free_mutex));
+	if(thread_safe_req){
+		pthread_mutex_unlock(&(mempool->free_mutex));
+	}
 }
 
 
@@ -450,8 +458,13 @@ void* mempool_realloc(mempool_t* mempool, void* ptr, u_int32_t num_bytes){
 		printf("MEMPOOL_ERROR: Attempt to realloc with size of 0 bytes. Invalid input.\n");
 	}
 
+	//Keep this local, avoids the need to compare constantly
+	register u_int8_t thread_safe_req = mempool->thread_safe == THREAD_SAFE_REQ;
+
 	//We will be searching through a list, so be sure to lock
-	pthread_mutex_lock(&(mempool->allocated_mutex));
+	if(thread_safe_req){
+		pthread_mutex_lock(&(mempool->allocated_mutex));
+	}
 
 	//We first need to find this value in the allocated list
 	register struct mem_block_t* cursor = mempool->allocated_list;
@@ -470,7 +483,9 @@ void* mempool_realloc(mempool_t* mempool, void* ptr, u_int32_t num_bytes){
 	}
 
 	//Unlock when done
-	pthread_mutex_unlock(&(mempool->allocated_mutex));
+	if(thread_safe_req){
+		pthread_mutex_unlock(&(mempool->allocated_mutex));
+	}
 
 	//If the target is still NULL, that means we didn't find the block
 	if(realloc_target == NULL){
@@ -549,9 +564,11 @@ int mempool_destroy(mempool_t* mempool){
 	free(mempool->memory_pool_original);
 
 	//Destroy the mutexes
-	pthread_mutex_destroy(&(mempool->free_mutex));
-	pthread_mutex_destroy(&(mempool->allocated_mutex));
-	
+	if(mempool->thread_safe == THREAD_SAFE_REQ){
+		pthread_mutex_destroy(&(mempool->free_mutex));
+		pthread_mutex_destroy(&(mempool->allocated_mutex));
+	}
+
 	//Free the overall mempool pointer
 	free(mempool);
 

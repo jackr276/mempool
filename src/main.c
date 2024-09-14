@@ -33,7 +33,7 @@ int main(){
 	 * size of that struct. Remember, the entire point of using this tool is to allow you to choose
 	 * the block size, so if you aren't doing this, you will not see any performance boost over malloc
 	 */
-	mempool_t* sample = mempool_init(500*KILOBYTE, sizeof(mempool_sample_struct_t));
+	mempool_t* sample = mempool_init(500*KILOBYTE, sizeof(mempool_sample_struct_t), THREAD_SAFE_NOT_REG);
 
 	printf("Testng mempool alloc. Allocating 500 sample structs.\n");
 
