@@ -38,6 +38,16 @@ struct mem_block_t {
 
 
 /**
+ * Define an enumerated type for if mempool needs to be thread safe. This should
+ * allow us to not use locks if we don't need to
+ */
+typedef enum {
+	THREAD_SAFE_REQ,
+	THREAD_SAFE_NOT_REG,
+} regex_thread_safety_t;
+
+
+/**
  * A struct that holds all data needed for a mempool. This will be passed through
  * all mempool method
  */
@@ -56,6 +66,9 @@ struct mempool_t {
 
 	//Keep track of coalesced blocks
 	u_int32_t num_coalesced;
+
+	//A type for determining if thread safety is required
+	regex_thread_safety_t thread_safe;
 	
 	//For thread safety
 	pthread_mutex_t free_mutex;
@@ -76,7 +89,7 @@ struct mempool_t {
  *
  * THREAD_SAFE: NO
  */
-mempool_t* mempool_init(u_int32_t size, u_int32_t default_block_size);
+mempool_t* mempool_init(u_int32_t size, u_int32_t default_block_size, regex_thread_safety_t thread_safe);
 
 
 /**
