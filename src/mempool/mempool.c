@@ -11,7 +11,7 @@
 /**
  * Initialize the memory pool to be of "size" bytes
  */
-mempool_t* mempool_init(u_int32_t size, u_int32_t default_block_size, regex_thread_safety_t thread_safe){
+mempool_t* mempool_init(u_int32_t size, u_int32_t default_block_size, mempool_thread_safety_t thread_safe){
 	//Input checking
 	if(size <= 0){
 		printf("MEMPOOL_ERROR: Invalid size for memory pool, memory pool will not be initialized\n");

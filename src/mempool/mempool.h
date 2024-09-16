@@ -43,8 +43,8 @@ struct mem_block_t {
  */
 typedef enum {
 	THREAD_SAFE_REQ,
-	THREAD_SAFE_NOT_REG,
-} regex_thread_safety_t;
+	THREAD_SAFE_NOT_REQ,
+} mempool_thread_safety_t;
 
 
 /**
@@ -68,7 +68,7 @@ struct mempool_t {
 	u_int32_t num_coalesced;
 
 	//A type for determining if thread safety is required
-	regex_thread_safety_t thread_safe;
+	mempool_thread_safety_t thread_safe;
 	
 	//For thread safety
 	pthread_mutex_t free_mutex;
@@ -89,7 +89,7 @@ struct mempool_t {
  *
  * THREAD_SAFE: NO
  */
-mempool_t* mempool_init(u_int32_t size, u_int32_t default_block_size, regex_thread_safety_t thread_safe);
+mempool_t* mempool_init(u_int32_t size, u_int32_t default_block_size, mempool_thread_safety_t thread_safe);
 
 
 /**
