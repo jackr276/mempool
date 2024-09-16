@@ -15,39 +15,39 @@ There are 6 functions exposed to the user by the `malloc.h` header file. Each of
 
 1.) mempool_init
 ```c
-int mempool_init(u_int32_t size, u_int32_t default_block_size)
+mempool_t* mempool_init(u_int32_t size, u_int32_t default_block_size)
 ```
 THREAD SAFE: NO
 
-The initializer function takes in the overall `size` of the mempool and the `default_block_size` to facilitate the initial creation of the memory pool. It is very important that you choose both of these parameters wisely. If you make the `size` too small, you will run out of space. **mempool does not resize once created.** This is something that I may change later on, but as of right now, once you make the mempool, you are stuck with that overall size. It is recommended that you be very very liberal with the size. The macros `KILOBYTE`, `MEGABYTE`, and `GIGABYTE` are included for convenience. The `default_block_size` is also very important to the overall performance of the memory pool. This size is meant to be the size of the blocks that you'll be allocating over and over again. If this size is too small, the memory pool won't crash, but it will **coalesce** blocks to get the size that you need. This operation is expensive, and the entire point of this tool is to avoid the need to do this.
+The initializer function takes in the overall `size` of the mempool and the `default_block_size` to facilitate the initial creation of the memory pool. It is very important that you choose both of these parameters wisely. If you make the `size` too small, you will run out of space. **mempool does not resize once created.** This is something that I may change later on, but as of right now, once you make the mempool, you are stuck with that overall size. It is recommended that you be very very liberal with the size. The macros `KILOBYTE`, `MEGABYTE`, and `GIGABYTE` are included for convenience. The `default_block_size` is also very important to the overall performance of the memory pool. This size is meant to be the size of the blocks that you'll be allocating over and over again. If this size is too small, the memory pool won't crash, but it will **coalesce** blocks to get the size that you need. This operation is expensive, and the entire point of this tool is to avoid the need to do this. This function will return a pointer to the mempool that was created. **If you lose this pointer, you will have a memory leak as you will not be able to destroy this mempool**. This `mempool_t*` is essential as it will be passed into all the other functions so that you can specify the specific mempool that you want to allocate to/free from.
 
 2.) mempool_destroy
 ```c
-int mempool_destroy()
+int mempool_destroy(mempool_t* mempool)
 ```
 THREAD SAFE: NO
 
-The destructor function destroys the entire memory pool. Once down, any pointers that were malloc'd become invalid because the large pool that they point to is now gone, so it is important that you only call this function when you are absolutely sure that you want to get rid of the entire memory pool. **mempool_destroy** is guaranteed to completely clean up the memory allocated by **mempool_init**, so it is impossible to memory leak with mempool.
+The destructor function destroys the entire memory pool. Once down, any pointers that were malloc'd become invalid because the large pool that they point to is now gone, so it is important that you only call this function when you are absolutely sure that you want to get rid of the entire memory pool. **mempool_destroy** is guaranteed to completely clean up the memory allocated by **mempool_init**, so it is impossible to memory leak with mempool. The paramter is the pointer to the mempool struct that you would like to teardown.
 
 3.) mempool_alloc
 ```c
-void* mempool_alloc(u_int32_t num_bytes)
+void* mempool_alloc(mempool_t* mempool, u_int32_t num_bytes)
 ```
 THREAD SAFE: YES
 
-The allocation function allocates a chunk of memory of size `num_bytes` and returns a pointer to the start of that allocated region to the user. If you run out of space, mempool_alloc will return `NULL`. This function is thread safe.
+The allocation function allocates a chunk of memory of size `num_bytes` and returns a pointer to the start of that allocated region to the user. If you run out of space, mempool_alloc will return `NULL`. This function is thread safe with regards to the mempool pointer.
 
 4.) mempool_calloc
 ```c
-void* mempool_calloc(u_int32_t num_members, size_t size)
+void* mempool_calloc(mempool_t* mempool, u_int32_t num_members, size_t size)
 ```
 THREAD SAFE: YES
 
-The `mempool_calloc` function allocates a chunk of memory that can hold `num_members`, each being `size` bytes. `mempool_calloc` also sets all bytes to 0 in the allocated block. Just like `mempool_alloc`, it returns a pointer to the first byte of the allocated region. This function is thread safe.
+The `mempool_calloc` function allocates a chunk of memory that can hold `num_members`, each being `size` bytes. `mempool_calloc` also sets all bytes to 0 in the allocated block. Just like `mempool_alloc`, it returns a pointer to the first byte of the allocated region. This function is thread safe with regards to the mempool pointer.
 
 5.) mempool_realloc
 ```c
-void* mempool_realloc(void* ptr, u_int32_t num_bytes)
+void* mempool_realloc(mempool_t* mempool, void* ptr, u_int32_t num_bytes)
 ```
 THREAD SAFE: YES
 
@@ -55,11 +55,11 @@ The `mempool_realloc` function reallocates a chunk of previously allocated memor
 
 6.) mempool_free
 ```c
-void mempool_free(void* ptr)
+void mempool_free(mempool_t* mempool, void* ptr)
 ```
 THREAD SAFE: YES
 
-The `mempool_free` function releases the memory chunk that is pointed to by `ptr`. If `ptr` was never allocated, the function will print a debug message alerting the user about a potential double free. `mempool_free` automatically defragments the allocated memory, leading to improvements over regular free. This function is thread safe.
+The `mempool_free` function releases the memory chunk that is pointed to by `ptr`. If `ptr` was never allocated, the function will print a debug message alerting the user about a potential double free. `mempool_free` automatically defragments the allocated memory, leading to improvements over regular free. This function is thread safe with regards to the mempool pointer. 
 
 ## Efficiency of mempool
 **mempool** is not *that* different from how malloc works, but it does reduce system calls. As said in the introduction, the use of this tool will only cause a noticeable speedup if you are malloc'ing and free'ing tens or hundreds of thousands of times. The main advantage of this tool is in the reduction of system calls/memory page access, and the elimination of heap fragmentation. I've included the asymptotic time complexity below:
