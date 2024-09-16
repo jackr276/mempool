@@ -51,7 +51,7 @@ void* mempool_realloc(mempool_t* mempool, void* ptr, u_int32_t num_bytes)
 ```
 THREAD SAFE: YES
 
-The `mempool_realloc` function reallocates a chunk of previously allocated memory pointed to by `ptr` to be of size `num_bytes`. `mempool_realloc` does not support downsizing, so `num_bytes` must always be larger than the previous size of the allocated block. This function is thread safe.
+The `mempool_realloc` function reallocates a chunk of previously allocated memory pointed to by `ptr` to be of size `num_bytes`. `mempool_realloc` does not support downsizing, so `num_bytes` must always be larger than the previous size of the allocated block. This function is thread safe with regards to the mempool pointer.
 
 6.) mempool_free
 ```c
