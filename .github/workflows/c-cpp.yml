@@ -16,6 +16,6 @@ jobs:
     - name: build
       run: make
     - name: test run
-      run: make test
+      run: ./out/test < ./test/test_args.txt
     - name: clean
       run: make clean

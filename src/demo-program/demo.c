@@ -26,10 +26,12 @@ int main(void){
 	//Grab N from the user
 	printf("Enter a value for N: ");
 	scanf("%u", &N);
+	printf("\n");
 
 	//Grab the intial complexity
 	printf("Enter the initial complexity: ");
 	scanf("%u", &complexity);
+	printf("\n");
 
 	printf("Generating an N-Puzzle with N = %u and initial complexity = %u\n", N, complexity);
 }

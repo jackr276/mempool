@@ -16,7 +16,7 @@ mempool_demo: # FIXME
 	$(CC) $(CFLAGS) ./src/demo-program/demo.c $(INCLUDE) -o $(OUT)/test
 
 test:
-	$(OUT)/test
+	$(OUT)/test < ./test/test_args.txt
 
 clean:
 	rm -r $(OUT)/*
