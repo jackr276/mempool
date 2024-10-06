@@ -15,7 +15,7 @@ all: $(PROGS)
 mempool_demo: # FIXME
 	$(CC) $(CFLAGS) ./src/demo-program/demo.c $(INCLUDE) -o $(OUT)/test
 
-test:
+test_run:
 	$(OUT)/test < ./test/test_args.txt
 
 clean:

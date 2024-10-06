@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include <time.h>
 #include "../../../mempool/mempool.h"
-
 typedef struct state_t state_t;
 typedef struct closed_t closed_t;
 typedef struct fringe_t fringe_t;
@@ -59,10 +58,10 @@ struct fringe_t {
 
 
 /* Method Protoypes */
-void initialize_state(state_t* state_ptr, const int N);
-void destroy_state(state_t* state_ptr);
-void cleanup_fringe_closed(fringe_t* fringe, closed_t* closed, state_t* state_ptr, const int N);
-void cleanup_solution_path(state_t* solution);
+void initialize_state(mempool_t* mempool, state_t* state_ptr, const int N);
+void destroy_state(mempool_t* mempool, state_t* state_ptr);
+void cleanup_fringe_closed(mempool_t* mempool, fringe_t* fringe, closed_t* closed, state_t* state_ptr, const int N);
+void cleanup_solution_path(mempool_t* mempool, state_t* solution);
 void print_state(state_t* state_ptr, const int N, int option);
 void copy_state(state_t* predecessor, state_t* successor, const int N);
 void move_down(state_t* state_ptr, const int N);
@@ -72,15 +71,15 @@ void move_left(state_t* state_ptr, const int N);
 int states_same(state_t* a, state_t* b, const int N);
 void update_prediction_function(state_t* state_ptr, int N);
 void priority_queue_insert(fringe_t* fringe, state_t* state_ptr);
-state_t* initialize_goal(const int N);
-state_t* generate_start_config(const int complexity, const int N);
+state_t* initialize_goal(mempool_t* mempool, const int N);
+state_t* generate_start_config(mempool_t* mempool, const int complexity, const int N);
 closed_t* initialize_closed(void);
 fringe_t* initialize_fringe(void);
 void merge_to_closed(closed_t* closed, state_t* state_ptr);
 state_t* dequeue(fringe_t* fringe);
 int fringe_empty(fringe_t* fringe);
-void check_repeating_fringe(fringe_t* fringe, state_t** state_ptr, const int N);
-void check_repeating_closed(closed_t* closed, state_t** state_ptr, const int N);
+void check_repeating_fringe(mempool_t* mempool, fringe_t* fringe, state_t** state_ptr, const int N);
+void check_repeating_closed(mempool_t* mempool, closed_t* closed, state_t** state_ptr, const int N);
 int merge_to_fringe(fringe_t* fringe, state_t* successors[4]);
 
 #endif /* PUZZLE_H */

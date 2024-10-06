@@ -13,6 +13,7 @@
 //Link to the NPuzzle solver and puzzle generator
 #include "./npuzzle/puzzle/puzzle.h"
 #include "./npuzzle/solver/solve.h"
+#include "../mempool/mempool.h"
 
 
 /**
@@ -35,6 +36,18 @@ int main(void){
 
 	printf("Generating an N-Puzzle with N = %u and initial complexity = %u\n", N, complexity);
 
+	//Initialize a mempool for our uses
+ 	mempool_t* mempool = mempool_init(complexity * 10 * KILOBYTE, sizeof(state_t),  THREAD_SAFE_REQ);
+
 	//Generate the random puzzle
+	state_t* start = generate_start_config(mempool, complexity, N);
+	//Create the goal
+	state_t* goal = initialize_goal(mempool, N);
+
+	//Call the solver to solve
+//	solve(mempool, N, start, goal, 1);
+
+	//Free the mempool
+	mempool_destroy(mempool);
 	
 }

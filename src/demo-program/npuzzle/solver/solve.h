@@ -18,6 +18,8 @@ typedef struct thread_params_t thread_params_t;
  * version of the solver
  */
 struct thread_params_t {
+	//The mempool that we are using
+	mempool_t* mempool;
 	//The predecessor state
 	state_t* predecessor;
 	//0 = leftMove, 1 = rightMove, 2 = downMove, 3 = upMove
@@ -33,6 +35,6 @@ struct thread_params_t {
 
 
 //The solve function. In theory, this is the only thing that we should need to see from solver
-state_t* solve(const int N, state_t* start_state, state_t* goal_state, int solver_mode);
+state_t* solve(mempool_t* mempool, const int N, state_t* start_state, state_t* goal_state, int solver_mode);
 
 #endif /* SOLVER_H */

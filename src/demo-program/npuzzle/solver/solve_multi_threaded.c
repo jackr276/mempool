@@ -33,7 +33,7 @@ static void* generator_worker(void* thread_params){
 		//Create the new state
 		moved = (state_t*)malloc(sizeof(state_t));
 		//Dynamically allocate the space needed in the state
-		initialize_state(moved, N);
+		initialize_state(parameters->mempool, moved, N);
 		//Perform a deep copy from predecessor to successor
 		copy_state(parameters->predecessor, moved, N);
 		//Use helper function to move left
@@ -44,7 +44,7 @@ static void* generator_worker(void* thread_params){
 		//Create the new state
 		moved = (state_t*)malloc(sizeof(state_t));
 		//Dynamically allocate the space needed in the state
-		initialize_state(moved, N);
+		initialize_state(parameters->mempool, moved, N);
 		//Perform a deep copy from predecessor to successor
 		copy_state(parameters->predecessor, moved, N);
 		//Use helper function to move right 
@@ -55,7 +55,7 @@ static void* generator_worker(void* thread_params){
 		//Create the new state
 		moved = (state_t*)malloc(sizeof(state_t));
 		//Dynamically allocate the space needed in the state
-		initialize_state(moved, N);
+		initialize_state(parameters->mempool, moved, N);
 		//Perform a deep copy from predecessor to successor
 		copy_state(parameters->predecessor, moved, N);
 		//Use helper function to move down	
@@ -66,7 +66,7 @@ static void* generator_worker(void* thread_params){
 		//Create the new state
 		moved = (state_t*)malloc(sizeof(state_t));
 		//Dynamically allocate the space needed in the state
-		initialize_state(moved, N);
+		initialize_state(parameters->mempool, moved, N);
 		//Perform a deep copy from predecessor to successor
 		copy_state(parameters->predecessor, moved, N);
 		//Use helper function to move up	
@@ -80,8 +80,8 @@ static void* generator_worker(void* thread_params){
 	if(moved != NULL){
 		//Now we must check for repeating
 		//Important -- we need to modify the state in successors, not the local copy "moved"
-		check_repeating_closed(parameters->closed, &(parameters->successors[option]), N);
-		check_repeating_fringe(parameters->fringe, &(parameters->successors[option]), N);
+		check_repeating_closed(parameters->mempool, parameters->closed, &(parameters->successors[option]), N);
+		check_repeating_fringe(parameters->mempool, parameters->fringe, &(parameters->successors[option]), N);
 		//Update prediction function
 		update_prediction_function(parameters->successors[option], N);
 	}
@@ -95,7 +95,7 @@ static void* generator_worker(void* thread_params){
  * This multi-threaded version of successor generation and validation spawns an individual thread for
  * each of the 4 possible moves, potentially expediting the process of generating and checking successors
  */
-static void generate_successors(fringe_t* fringe, closed_t* closed, state_t* predecessor, state_t** successors, int N){
+static void generate_successors(mempool_t* mempool, fringe_t* fringe, closed_t* closed, state_t* predecessor, state_t** successors, int N){
 	//We will create 4 threads, once for each successor potential successor
 	pthread_t thread_arr[4];
 	//We also need 4 thread_param structures 
@@ -106,6 +106,8 @@ static void generate_successors(fringe_t* fringe, closed_t* closed, state_t* pre
 		//Reserve space and allocate appropriate values in each thread_param
 		param_arr[i] = (thread_params_t*)malloc(sizeof(thread_params_t));
 		param_arr[i]->predecessor = predecessor;
+		//Store the mempool for passage
+		param_arr[i]->mempool = mempool;
 		//The option will tell the thread function what move to make
 		param_arr[i]->option = i;
 		//Set the value of N
@@ -164,7 +166,7 @@ void print_solution_path(state_t* solution_path, const int N, int pathlen, int n
  * is successful, it will print the resulting solution path to the console as well.  
  * For mode: 0 equals web client solve, 1 equals debug(CLI) mode
  */
-state_t* solve(const int N, state_t* start_state, state_t* goal_state, int solver_mode){
+state_t* solve(mempool_t* mempool, const int N, state_t* start_state, state_t* goal_state, int solver_mode){
 	//If we are in debug mode, we will start off by printing to the console
 	if(solver_mode == 1){
 		printf("\nInitial State:\n");
@@ -172,7 +174,6 @@ state_t* solve(const int N, state_t* start_state, state_t* goal_state, int solve
 		printf("Goal state\n");
 		print_state(goal_state, N, 0);
 	} 
-	
 
 	//Create the fringe and closed structues
 	fringe_t* fringe = initialize_fringe();
@@ -226,14 +227,14 @@ state_t* solve(const int N, state_t* start_state, state_t* goal_state, int solve
 			}
 
 			//Cleanup the fringe and closed arrays
-			cleanup_fringe_closed(fringe, closed, solution_path, N);
+			cleanup_fringe_closed(mempool, fringe, closed, solution_path, N);
 
 			//If we are in debug mode, print this path to the console
 			if(solver_mode == 1){
 				//Print the path
 				print_solution_path(solution_path, N, pathlen, num_unique_configs, time_spent_CPU);
 				//Cleanup the path
-				cleanup_solution_path(solution_path);
+				cleanup_solution_path(mempool, solution_path);
 				//Return nothing, as it isn't used
 				return NULL;
 			}
@@ -248,7 +249,7 @@ state_t* solve(const int N, state_t* start_state, state_t* goal_state, int solve
 		 */
 
 		//Generate successors to the current state once we know it isn't a solution
-		generate_successors(fringe, closed, curr_state, successors, N);
+		generate_successors(mempool, fringe, closed, curr_state, successors, N);
 		/* End multi-threading */
 
 		//Add all necessary states to fringe now that we have checked for repeats and updated predictions 
@@ -271,6 +272,6 @@ state_t* solve(const int N, state_t* start_state, state_t* goal_state, int solve
 	printf("No solution.\n");
 
 	//Cleanup the fringe and closed arrays
-	cleanup_fringe_closed(fringe, closed, NULL, N);
+	cleanup_fringe_closed(mempool, fringe, closed, NULL, N);
 	return NULL;
 }
