@@ -31,7 +31,7 @@ static void* generator_worker(void* thread_params){
 	//Perform a left move if option is 0 and if possible
 	if(option == 0 && parameters->predecessor->zero_column > 0){
 		//Create the new state
-		moved = (state_t*)malloc(sizeof(state_t));
+		moved = (state_t*)mempool_alloc(parameters->mempool, sizeof(state_t));
 		//Dynamically allocate the space needed in the state
 		initialize_state(parameters->mempool, moved, N);
 		//Perform a deep copy from predecessor to successor
@@ -42,7 +42,7 @@ static void* generator_worker(void* thread_params){
 	//Perform a right move if option is 1 and if possible
 	} else if(option == 1 && parameters->predecessor->zero_column < N-1){
 		//Create the new state
-		moved = (state_t*)malloc(sizeof(state_t));
+		moved = (state_t*)mempool_alloc(parameters->mempool, sizeof(state_t));
 		//Dynamically allocate the space needed in the state
 		initialize_state(parameters->mempool, moved, N);
 		//Perform a deep copy from predecessor to successor
@@ -53,7 +53,7 @@ static void* generator_worker(void* thread_params){
 	//Perform a down move if option is 2 and if possible
 	} else if(option == 2 && parameters->predecessor->zero_row < N-1){
 		//Create the new state
-		moved = (state_t*)malloc(sizeof(state_t));
+		moved = (state_t*)mempool_alloc(parameters->mempool, sizeof(state_t));
 		//Dynamically allocate the space needed in the state
 		initialize_state(parameters->mempool, moved, N);
 		//Perform a deep copy from predecessor to successor
@@ -64,7 +64,7 @@ static void* generator_worker(void* thread_params){
 	//Perform an up move if option is 3 and if possible
 	} else if(option == 3 && parameters->predecessor->zero_row > 0){
 		//Create the new state
-		moved = (state_t*)malloc(sizeof(state_t));
+		moved = (state_t*)mempool_alloc(parameters->mempool, sizeof(state_t));
 		//Dynamically allocate the space needed in the state
 		initialize_state(parameters->mempool, moved, N);
 		//Perform a deep copy from predecessor to successor
@@ -226,16 +226,17 @@ state_t* solve(mempool_t* mempool, const int N, state_t* start_state, state_t* g
 				pathlen++;
 			}
 
-			//Cleanup the fringe and closed arrays
-			cleanup_fringe_closed(mempool, fringe, closed, solution_path, N);
+			//Clean these up
+			free(closed->array);
+			free(closed);
+			free(fringe->heap);
+			free(fringe);
 
 			//If we are in debug mode, print this path to the console
 			if(solver_mode == 1){
 				//Print the path
 				print_solution_path(solution_path, N, pathlen, num_unique_configs, time_spent_CPU);
 				//Cleanup the path
-				cleanup_solution_path(mempool, solution_path);
-				//Return nothing, as it isn't used
 				return NULL;
 			}
 

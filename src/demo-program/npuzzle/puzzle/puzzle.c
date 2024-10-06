@@ -6,6 +6,7 @@
 
 //Link to puzzle.h
 #include "puzzle.h"
+#include <sys/types.h>
 
 
 /**
@@ -14,7 +15,7 @@
  */
 void initialize_state(mempool_t* mempool, state_t* statePtr, const int N){
 	//Declare all of the pointers needed for each row
-	statePtr->tiles = (short*)mempool_alloc(mempool, sizeof(short) * N * N);
+	statePtr->tiles = (u_int16_t*)mempool_alloc(mempool, sizeof(u_int16_t) * N * N);
 	statePtr->predecessor = NULL;
 	statePtr->next = NULL;
 }
@@ -711,7 +712,7 @@ void cleanup_fringe_closed(mempool_t* mempool, fringe_t* fringe, closed_t* close
 	free(fringe);
 
 	//cleanup closed
-	for(int i = 0; i < closed->next_closed_index; i++){
+	for(u_int32_t i = 0; i < closed->next_closed_index; i++){
 		//NOTE: some of the stuff is fringe is in our solution path,
 		//for obvious reasons, if we destroy those states we will have issues
 		//so we must check here

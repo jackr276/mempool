@@ -25,11 +25,11 @@ typedef struct fringe_t fringe_t;
 */
 struct state_t {
    //Define a dynamic 2D array for the tiles since we have a variable puzzle size
-   short* tiles;
+   u_int16_t* tiles;
    //For A*, define the total_cost, how far the tile has traveled, and heuristic cost int total_cost, current_travel, heuristic_cost;
-   int total_cost, current_travel, heuristic_cost;
+   u_int16_t total_cost, current_travel, heuristic_cost;
    //location (row and colum) of blank tile 0
-   short zero_row, zero_column;
+   u_int16_t zero_row, zero_column;
    //The next state in the linked list(fringe or closed), NOT a successor
    state_t* next;
    //The predecessor of the current state, used for tracing back a solution	
@@ -42,8 +42,8 @@ struct state_t {
  */
 struct closed_t {
 	state_t** array;
-	int next_closed_index;
-	int closed_max_size;
+	u_int32_t next_closed_index;
+	u_int32_t closed_max_size;
 };
 
 
