@@ -276,7 +276,7 @@ void mempool_free(mempool_t* mempool, void* ptr){
 	register struct mem_block_t* freed;
 
 	//Since we are modifying the allocated list, we need to lock
-		pthread_mutex_lock(&(mempool->allocated_mutex));
+	pthread_mutex_lock(&(mempool->allocated_mutex));
 
 	//Search through the allocated list to find the pointer directly previous to this one
 	register struct mem_block_t* cursor = mempool->allocated_list;
@@ -314,7 +314,7 @@ void mempool_free(mempool_t* mempool, void* ptr){
 	}
 
 	//Now we're done with the allocated list, so we can unlock it for someone else to use
-		pthread_mutex_unlock(&(mempool->allocated_mutex));
+	pthread_mutex_unlock(&(mempool->allocated_mutex));
 
 	//The "tail" of the freed allocation
 	register struct mem_block_t* freed_tail;
@@ -350,7 +350,7 @@ void mempool_free(mempool_t* mempool, void* ptr){
 	}
 
 	//We will be modifying the free list, so we need to lock it
-		pthread_mutex_lock(&(mempool->free_mutex));
+	pthread_mutex_lock(&(mempool->free_mutex));
 
 	//We now need to strategically add this back onto the free list. We want the free list to be as in order as possible according to
 	//the memory addresses of the blocks, in case we ever need to coalesce blocks
@@ -380,7 +380,7 @@ void mempool_free(mempool_t* mempool, void* ptr){
 	}
 
 	//All done so unlock
-		pthread_mutex_unlock(&(mempool->free_mutex));
+	pthread_mutex_unlock(&(mempool->free_mutex));
 }
 
 
