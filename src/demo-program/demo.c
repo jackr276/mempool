@@ -40,7 +40,7 @@ int main(void){
 	u_int32_t default_block_size = (sizeof(state_t) > N*N*sizeof(u_int16_t)) ? sizeof(state_t) : N * N * sizeof(u_int16_t); 
 
 	//Initialize a mempool for our uses
- 	mempool_t* mempool = mempool_init(N * complexity * 50 * KILOBYTE, default_block_size,  THREAD_SAFE_REQ);
+ 	mempool_t* mempool = mempool_init(N * complexity * 100 * KILOBYTE, default_block_size);
 
 	//Generate the random puzzle
 	state_t* start = generate_start_config(mempool, complexity, N);

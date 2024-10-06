@@ -11,7 +11,7 @@
 /**
  * Initialize the memory pool to be of "size" bytes
  */
-mempool_t* mempool_init(u_int32_t size, u_int32_t default_block_size, mempool_thread_safety_t thread_safe){
+mempool_t* mempool_init(u_int32_t size, u_int32_t default_block_size){
 	//Input checking
 	if(size <= 0){
 		printf("MEMPOOL_ERROR: Invalid size for memory pool, memory pool will not be initialized\n");
@@ -28,7 +28,6 @@ mempool_t* mempool_init(u_int32_t size, u_int32_t default_block_size, mempool_th
 	mempool_t* mempool = (mempool_t*)malloc(sizeof(mempool_t));
 
 	mempool->num_coalesced = 0;
-	mempool->thread_safe = thread_safe;
 
 	//Allocate the entire monolithic memory pool
 	mempool->memory_pool_original = malloc(size);
@@ -76,12 +75,9 @@ mempool_t* mempool_init(u_int32_t size, u_int32_t default_block_size, mempool_th
 	//Once we get here, every block will have been allocated
 	mempool->mempool_size = size;
 
-	//If thread safety was required
-	if(thread_safe == THREAD_SAFE_REQ){
-		//Initialize the mutexes
-		pthread_mutex_init(&(mempool->free_mutex),  NULL);
-		pthread_mutex_init(&(mempool->allocated_mutex),  NULL);
-	}
+	//Initialize the mutexes
+	pthread_mutex_init(&(mempool->free_mutex),  NULL);
+	pthread_mutex_init(&(mempool->allocated_mutex),  NULL);
 	
 	//Let the caller know all went well
 	return mempool;
@@ -101,9 +97,6 @@ void* mempool_alloc(mempool_t* mempool, u_int32_t num_bytes){
 		return NULL;
 	}
 
-	//Keep this local, avoids the need to compare constantly
-	register u_int8_t thread_safe_req = mempool->thread_safe == THREAD_SAFE_REQ;
-
 	//Our allocated block
 	register struct mem_block_t* allocated;
 
@@ -111,9 +104,7 @@ void* mempool_alloc(mempool_t* mempool, u_int32_t num_bytes){
 	//this should be the case the majority of the time
 	if(num_bytes <= mempool->block_size){
 		//Lock the free list
-		if(thread_safe_req){
-			pthread_mutex_lock(&(mempool->free_mutex));
-		}
+		pthread_mutex_lock(&(mempool->free_mutex));
 
 		//Grab the head
 		allocated = mempool->free_list;
@@ -122,11 +113,9 @@ void* mempool_alloc(mempool_t* mempool, u_int32_t num_bytes){
 		mempool->free_list = mempool->free_list->next;
 
 		//Unlock the free list
-		if(thread_safe_req){
-			pthread_mutex_unlock(&(mempool->free_mutex));
-			//Now we'll use the allocated list, so lock it
-			pthread_mutex_lock(&(mempool->allocated_mutex));
-		}
+		pthread_mutex_unlock(&(mempool->free_mutex));
+		//Now we'll use the allocated list, so lock it
+		pthread_mutex_lock(&(mempool->allocated_mutex));
 
 		
 		//Attach it to the allocated list
@@ -136,9 +125,7 @@ void* mempool_alloc(mempool_t* mempool, u_int32_t num_bytes){
 		mempool->allocated_list = allocated;
 		
 		//All done so unlock
-		if(thread_safe_req){
-			pthread_mutex_unlock(&(mempool->allocated_mutex));
-		}
+		pthread_mutex_unlock(&(mempool->allocated_mutex));
 
 	} else {
 		(mempool->num_coalesced)++;
@@ -148,9 +135,7 @@ void* mempool_alloc(mempool_t* mempool, u_int32_t num_bytes){
 		u_int32_t blocks_needed = num_bytes / mempool->block_size + ((num_bytes % mempool->block_size == 0) ? 0 : 1);
 		
 		//We will be modifying the free_list, so lock
-		if(thread_safe_req){
-			pthread_mutex_lock(&(mempool->free_mutex));
-		}
+		pthread_mutex_lock(&(mempool->free_mutex));
 
 		//We need contiguous blocks, i.e, their memory addresses have to be one after the other
 		//This is not a guarantee in the free list, so we have to search until we find this
@@ -225,9 +210,7 @@ void* mempool_alloc(mempool_t* mempool, u_int32_t num_bytes){
 		}
 
 		//Done modifying the free list, so unlock
-		if(thread_safe_req){
-			pthread_mutex_unlock(&(mempool->free_mutex));
-		}
+		pthread_mutex_unlock(&(mempool->free_mutex));
 
 		//Set this for later
 		contiguous_chunk_tail->next = NULL;
@@ -252,18 +235,14 @@ void* mempool_alloc(mempool_t* mempool, u_int32_t num_bytes){
 		}
 
 		//Modifying the allocated_list, so lock
-		if(thread_safe_req){
-			pthread_mutex_lock(&(mempool->allocated_mutex));
-		}
+		pthread_mutex_lock(&(mempool->allocated_mutex));
 
 		//Once we're here, we've successfully coalesced and removed everything, so we can add the head to the allocated_list
 		contiguous_chunk_head->next = mempool->allocated_list;
 		mempool->allocated_list = contiguous_chunk_head;
 
 		//All done so unlock
-		if(thread_safe_req){
-			pthread_mutex_unlock(&(mempool->allocated_mutex));
-		}
+		pthread_mutex_unlock(&(mempool->allocated_mutex));
 
 		//Set this for our return
 		allocated = contiguous_chunk_head;
@@ -293,16 +272,11 @@ void mempool_free(mempool_t* mempool, void* ptr){
 		return;
 	}
 
-	//Keep this local, avoids the need to compare constantly
-	register u_int8_t thread_safe_req = mempool->thread_safe == THREAD_SAFE_REQ;
-
 	//A reference to the block that we want to free
 	register struct mem_block_t* freed;
 
 	//Since we are modifying the allocated list, we need to lock
-	if(thread_safe_req){
 		pthread_mutex_lock(&(mempool->allocated_mutex));
-	}
 
 	//Search through the allocated list to find the pointer directly previous to this one
 	register struct mem_block_t* cursor = mempool->allocated_list;
@@ -340,9 +314,7 @@ void mempool_free(mempool_t* mempool, void* ptr){
 	}
 
 	//Now we're done with the allocated list, so we can unlock it for someone else to use
-	if(thread_safe_req){
 		pthread_mutex_unlock(&(mempool->allocated_mutex));
-	}
 
 	//The "tail" of the freed allocation
 	register struct mem_block_t* freed_tail;
@@ -378,9 +350,7 @@ void mempool_free(mempool_t* mempool, void* ptr){
 	}
 
 	//We will be modifying the free list, so we need to lock it
-	if(thread_safe_req){
 		pthread_mutex_lock(&(mempool->free_mutex));
-	}
 
 	//We now need to strategically add this back onto the free list. We want the free list to be as in order as possible according to
 	//the memory addresses of the blocks, in case we ever need to coalesce blocks
@@ -410,9 +380,7 @@ void mempool_free(mempool_t* mempool, void* ptr){
 	}
 
 	//All done so unlock
-	if(thread_safe_req){
 		pthread_mutex_unlock(&(mempool->free_mutex));
-	}
 }
 
 
@@ -458,13 +426,8 @@ void* mempool_realloc(mempool_t* mempool, void* ptr, u_int32_t num_bytes){
 		printf("MEMPOOL_ERROR: Attempt to realloc with size of 0 bytes. Invalid input.\n");
 	}
 
-	//Keep this local, avoids the need to compare constantly
-	register u_int8_t thread_safe_req = mempool->thread_safe == THREAD_SAFE_REQ;
-
 	//We will be searching through a list, so be sure to lock
-	if(thread_safe_req){
-		pthread_mutex_lock(&(mempool->allocated_mutex));
-	}
+	pthread_mutex_lock(&(mempool->allocated_mutex));
 
 	//We first need to find this value in the allocated list
 	register struct mem_block_t* cursor = mempool->allocated_list;
@@ -483,9 +446,7 @@ void* mempool_realloc(mempool_t* mempool, void* ptr, u_int32_t num_bytes){
 	}
 
 	//Unlock when done
-	if(thread_safe_req){
-		pthread_mutex_unlock(&(mempool->allocated_mutex));
-	}
+	pthread_mutex_unlock(&(mempool->allocated_mutex));
 
 	//If the target is still NULL, that means we didn't find the block
 	if(realloc_target == NULL){
@@ -564,10 +525,8 @@ int mempool_destroy(mempool_t* mempool){
 	free(mempool->memory_pool_original);
 
 	//Destroy the mutexes
-	if(mempool->thread_safe == THREAD_SAFE_REQ){
-		pthread_mutex_destroy(&(mempool->free_mutex));
-		pthread_mutex_destroy(&(mempool->allocated_mutex));
-	}
+	pthread_mutex_destroy(&(mempool->free_mutex));
+	pthread_mutex_destroy(&(mempool->allocated_mutex));
 
 	//Free the overall mempool pointer
 	free(mempool);
