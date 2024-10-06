@@ -34,4 +34,7 @@ int main(void){
 	printf("\n");
 
 	printf("Generating an N-Puzzle with N = %u and initial complexity = %u\n", N, complexity);
+
+	//Generate the random puzzle
+	
 }

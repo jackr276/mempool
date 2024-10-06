@@ -12,7 +12,7 @@
  * The initialize_state function takes in a pointer to a state and reserves the appropriate space for the dynamic array
  * that holds the tiles 
  */
-void initialize_state(struct state* statePtr, const int N){
+void initialize_state(state_t* statePtr, const int N){
 	//Declare all of the pointers needed for each row
 	statePtr->tiles = (short*)malloc(sizeof(short) * N * N);
 	statePtr->predecessor = NULL;
@@ -23,7 +23,7 @@ void initialize_state(struct state* statePtr, const int N){
 /**
  * The destroy_state function does the exact reverse of the initialize_state function to properly free memory
  */
-void destroy_state(struct state* statePtr){
+void destroy_state(state_t* statePtr){
 	//We only need to free the tile pointer in this case
 	free(statePtr->tiles);
 }
@@ -33,7 +33,7 @@ void destroy_state(struct state* statePtr){
  * Prints out a state by printing out the positions in the 4x4 grid. If option is 1, print the
  * state out in one line
  */
-void print_state(struct state* statePtr, const int N, int option){
+void print_state(state_t* statePtr, const int N, int option){
 	//Go through tile by tile and print out
 	for (int i = 0; i < N; i++) {
 		for (int j = 0; j < N; j++){
@@ -59,7 +59,7 @@ void print_state(struct state* statePtr, const int N, int option){
 /**
  * Performs a "deep copy" from the predecessor to the successor
  */
-void copy_state(struct state* predecessor, struct state* successor, const int N){
+void copy_state(state_t* predecessor, state_t* successor, const int N){
 	//Copy over the tiles array
 	for(int i = 0; i < N; i++){
 		for(int j = 0; j < N; j++){
@@ -84,7 +84,7 @@ void copy_state(struct state* predecessor, struct state* successor, const int N)
  * A simple function that swaps two tiles in the provided state
  * Note: The swap function assumes all row positions are valid, this must be checked by the caller
  */
-static void swap_tiles(int row1, int column1, int row2, int column2, struct state* statePtr, const int N){
+static void swap_tiles(int row1, int column1, int row2, int column2, state_t* statePtr, const int N){
 	//Store the first tile in a temp variable
 	short tile = *(statePtr->tiles + row1 * N + column1);
 	//Put the tile from row2, column2 into row1, column1
@@ -97,7 +97,7 @@ static void swap_tiles(int row1, int column1, int row2, int column2, struct stat
 /**
  * Move the 0 slider down by 1 row
  */
-void move_down(struct state* statePtr, const int N){
+void move_down(state_t* statePtr, const int N){
 	//Utilize the swap function, move the zero_row down by 1
 	swap_tiles(statePtr->zero_row, statePtr->zero_column, statePtr->zero_row+1, statePtr->zero_column, statePtr, N);
 	//Increment the zero_row to keep the position accurate
@@ -108,7 +108,7 @@ void move_down(struct state* statePtr, const int N){
 /**
  * Move the 0 slider right by 1 column
  */
-void move_right(struct state* statePtr, const int N){
+void move_right(state_t* statePtr, const int N){
 	//Utilize the swap function, move the zero_column right by 1
 	swap_tiles(statePtr->zero_row, statePtr->zero_column, statePtr->zero_row, statePtr->zero_column+1, statePtr, N);
 	//Increment the zero_column to keep the position accurate
@@ -119,7 +119,7 @@ void move_right(struct state* statePtr, const int N){
 /**
  * Move the 0 slider up by 1 row
  */
-void move_up(struct state* statePtr, const int N){
+void move_up(state_t* statePtr, const int N){
 	//Utilize the swap function, move the zero_row up by 1
 	swap_tiles(statePtr->zero_row, statePtr->zero_column, statePtr->zero_row-1, statePtr->zero_column, statePtr, N);
 	//Decrement the zero_row to keep the position accurate
@@ -130,7 +130,7 @@ void move_up(struct state* statePtr, const int N){
 /**
  * Move the 0 slider left by 1 column
  */
-void move_left(struct state* statePtr, const int N){
+void move_left(state_t* statePtr, const int N){
 	//Utilize the swap function, move the zero_column left by 1
 	swap_tiles(statePtr->zero_row, statePtr->zero_column, statePtr->zero_row, statePtr->zero_column-1, statePtr, N);
 	//Decrement the zero_column to keep the position accurate
@@ -141,7 +141,7 @@ void move_left(struct state* statePtr, const int N){
 /**
  * A simple helper function that will tell if two states are the same. To be used for filtering
  */
-int states_same(struct state* a, struct state* b, const int N){
+int states_same(state_t* a, state_t* b, const int N){
 	//Efficiency speedup -- if zero row and column aren't equal, return false
 	if(a->zero_row != b->zero_row || a->zero_column != b->zero_column){
 		return 0;
@@ -163,7 +163,7 @@ int states_same(struct state* a, struct state* b, const int N){
  * Update the prediction function for the state pointed to by succ_states[i]. If this pointer is null, simply skip updating
  * and return. This is a generic algorithm, so it will work for any size N
  */ 
-void update_prediction_function(struct state* statePtr, const int N){
+void update_prediction_function(state_t* statePtr, const int N){
 	//If statePtr is null, this state was a repeat and has been freed, so don't calculate anything
 	if(statePtr == NULL){
 		return;
@@ -318,9 +318,9 @@ void update_prediction_function(struct state* statePtr, const int N){
  * This initialization function mathematically creates a goal state for a given 
  * size N
  */
-struct state* initialize_goal(const int N){
+state_t* initialize_goal(const int N){
 	//Initial allocation
-	struct state* goal_state = (struct state*)malloc(sizeof(struct state));
+	state_t* goal_state = (state_t*)malloc(sizeof(state_t));
 	//Dynamically allocate the memory needed in the goal_state
 	initialize_state(goal_state, N);	
 
@@ -350,16 +350,16 @@ struct state* initialize_goal(const int N){
 /**
  * A simple helper function that allocates memory for fringe
  */
-struct fringe* initialize_fringe(){
-	//Allocate memory for the fringe struct
-	struct fringe* fringe = (struct fringe*)malloc(sizeof(struct fringe));
+fringe_t* initialize_fringe(){
+	//Allocate memory for the fringe struct -- note how we use regular malloc here
+	fringe_t* fringe = (fringe_t*)malloc(sizeof(fringe_t));
 
 	//Initialize these values
 	fringe->fringe_max_size = ARRAY_START_SIZE;
 	fringe->next_fringe_index = 0;
 
 	//Allocate space for the heap
-	fringe->heap = (struct state**)malloc(sizeof(struct state*) * fringe->fringe_max_size);
+	fringe->heap = (state_t**)malloc(sizeof(state_t*) * fringe->fringe_max_size);
 
 	//Return a pointer to our fringe in memory
 	return fringe;
@@ -369,16 +369,16 @@ struct fringe* initialize_fringe(){
 /**
  * A simple helper function that allocates memory for closed
  */
-struct closed* initialize_closed(){
+closed_t* initialize_closed(){
 	//Allocate memory for closed
-	struct closed* closed = (struct closed*)malloc(sizeof(struct closed));
+	closed_t* closed = (closed_t*)malloc(sizeof(closed_t));
 	
 	//Initialize these values
 	closed->closed_max_size = ARRAY_START_SIZE;
 	closed->next_closed_index = 0;
 
 	//Reserve space for the internal array
-	closed->array = (struct state**)malloc(sizeof(struct state*) * closed->closed_max_size);
+	closed->array = (state_t**)malloc(sizeof(state_t*) * closed->closed_max_size);
 
 	//Return the closed pointer
 	return closed;
@@ -389,13 +389,13 @@ struct closed* initialize_closed(){
  * A helper function that merges the given statePtr into closed. This function also automatically
  * resizes closed, so the caller does not have to maintain the array
  */
-void merge_to_closed(struct closed* closed, struct state* statePtr){
+void merge_to_closed(closed_t* closed, state_t* statePtr){
 	//If we run out of space, we can expand
 	if(closed->next_closed_index == closed->closed_max_size){
 		//Double closed max size
 		closed->closed_max_size *= 2;
 		//Reallocate space for closed
-		closed->array = (struct state**)realloc(closed->array, sizeof(struct state*) * closed->closed_max_size);
+		closed->array = (state_t**)realloc(closed->array, sizeof(state_t*) * closed->closed_max_size);
 	}
 
 	//Put curr_state into closed
@@ -409,8 +409,8 @@ void merge_to_closed(struct closed* closed, struct state* statePtr){
 /**
  * A simple helper function that will swap two pointers in our minHeap
  */
-static void swap(struct state** a, struct state** b){
-	struct state* temp = *a;
+static void swap(state_t** a, state_t** b){
+	state_t* temp = *a;
 	*a = *b;
 	*b = temp;
 }
@@ -428,13 +428,13 @@ static int parent_index(int index){
  * States will be merged into fringe according to their priority values. The lower the total cost,
  * the higher the priority. Since fringe is a minHeap, we will insert accordingly
  */
-void priority_queue_insert(struct fringe* fringe, struct state* statePtr){
+void priority_queue_insert(fringe_t* fringe, state_t* statePtr){
 	//Automatic resize
 	if(fringe->next_fringe_index == fringe->fringe_max_size){
 		//Just double this value
 		fringe->fringe_max_size *= 2;
 		//Reallocate fringe memory	
-		fringe->heap = (struct state**)realloc(fringe->heap, sizeof(struct state*) * fringe->fringe_max_size);
+		fringe->heap = (state_t**)realloc(fringe->heap, sizeof(state_t*) * fringe->fringe_max_size);
 	}
 
 	//Insert value at the very end
@@ -460,7 +460,7 @@ void priority_queue_insert(struct fringe* fringe, struct state* statePtr){
  * A recursive function that will heapify fringe following any delete operations. It takes in
  * the index to be min heapified. This is a "down heapify" because we start at the front
  */
-static void min_heapify(struct fringe* fringe, int index){
+static void min_heapify(fringe_t* fringe, int index){
 	//Initialize the smallest as the index
 	int smallest = index;
 	//Right and left children of current index
@@ -491,9 +491,9 @@ static void min_heapify(struct fringe* fringe, int index){
  * Dequeues by removing from the minHeap datastructure. This involves removing value at index 0,
  * replacing it with the very last value, and calling minHeapify()
  */
-struct state* dequeue(struct fringe* fringe){
+state_t* dequeue(fringe_t* fringe){
 	//Save the pointer, we always take from the front
-	struct state* dequeued = fringe->heap[0];
+	state_t* dequeued = fringe->heap[0];
 	
 	//Put the last element in the front to "prime" the heap
 	fringe->heap[0] = fringe->heap[fringe->next_fringe_index - 1];
@@ -513,9 +513,9 @@ struct state* dequeue(struct fringe* fringe){
  * This function generates a starting configuration of appropriate complexity by moving the 0
  * slider around randomly, for an appropriate number of moves
  */
-struct state* generate_start_config(const int complexity, const int N){
+state_t* generate_start_config(const int complexity, const int N){
 	//Create the simplified state that we will use for generation
-	struct state* statePtr = (struct state*)malloc(sizeof(struct state));
+	state_t* statePtr = (state_t*)malloc(sizeof(state_t));
 	//Iniitialize the state with helper function
 	initialize_state(statePtr, N);
 
@@ -584,7 +584,7 @@ struct state* generate_start_config(const int complexity, const int N){
 /**
  * A very simple helper function that lets solve know if the fringe is empty
  */
-int fringe_empty(struct fringe* fringe){
+int fringe_empty(fringe_t* fringe){
 	return fringe->next_fringe_index == 0;
 }
 
@@ -594,7 +594,7 @@ int fringe_empty(struct fringe* fringe){
  * set the pointer to be null
  * NOTE: since we may modify the memory address of statePtr, we need a reference to that address 
  */
-void check_repeating_fringe(struct fringe* fringe, struct state** statePtr, const int N){ 	
+void check_repeating_fringe(fringe_t* fringe, state_t** statePtr, const int N){ 	
 	//If succ_states[i] is NULL, no need to check anything
 	if(*statePtr == NULL){
 		return;
@@ -622,7 +622,7 @@ void check_repeating_fringe(struct fringe* fringe, struct state** statePtr, cons
  * using closed as an array is a major speedup for us
  * NOTE: since we may modify the memory address of statePtr, we need a reference to that address 
  */
-void check_repeating_closed(struct closed* closed, struct state** statePtr, const int N){
+void check_repeating_closed(closed_t* closed, state_t** statePtr, const int N){
 	//If this has already been made null, simply return
 	if(*statePtr == NULL){
 		return;
@@ -649,7 +649,7 @@ void check_repeating_closed(struct closed* closed, struct state** statePtr, cons
  * This function simply iterates through successors, passing the appropriate states along to priority_queue_insert if the pointers
  * are not null
  */
-int merge_to_fringe(struct fringe* fringe, struct state* successors[4]){ 
+int merge_to_fringe(fringe_t* fringe, state_t* successors[4]){ 
 	//Keep track of how many valid(not null) successors that we merge in
 	int valid_successors = 0;
 
@@ -670,14 +670,14 @@ int merge_to_fringe(struct fringe* fringe, struct state* successors[4]){
 /**
  * A helper function to tell us if state_ptr is in the solution path linked list
  */
-static int in_solution_path(struct state* state_ptr, struct state* solution_path, const int N){
+static int in_solution_path(state_t* state_ptr, state_t* solution_path, const int N){
 	//If the solution is null, it can't contain it so return false
 	if(solution_path == NULL){
 		return 0;
 	}
 
 	//Maintain a cursor
-	struct state* cursor = solution_path;
+	state_t* cursor = solution_path;
 
 	//Iterate over our linked list
 	while(cursor != NULL){
@@ -698,7 +698,7 @@ static int in_solution_path(struct state* state_ptr, struct state* solution_path
 /**
  * Cleanup the fringe and closed lists when we're done
  */
-void cleanup_fringe_closed(struct fringe* fringe, struct closed* closed, struct state* solution_path, const int N){
+void cleanup_fringe_closed(fringe_t* fringe, closed_t* closed, state_t* solution_path, const int N){
 	//cleanup fringe
 	for(int i = 0; i < fringe->next_fringe_index; i++){
 		destroy_state(fringe->heap[i]);
@@ -731,10 +731,10 @@ void cleanup_fringe_closed(struct fringe* fringe, struct closed* closed, struct 
 /**
  * Define a way of cleaning up the solution path once done with it
  */
-void cleanup_solution_path(struct state* solution_path){
+void cleanup_solution_path(state_t* solution_path){
 	//Assign a cursor for list traversal
-	struct state* cursor = solution_path;
-	struct state* temp;	
+	state_t* cursor = solution_path;
+	state_t* temp;	
 
 	//Iterate over the linked list
 	while(cursor != NULL){

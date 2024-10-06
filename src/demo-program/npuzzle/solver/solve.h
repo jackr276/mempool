@@ -10,26 +10,29 @@
 #include "../puzzle/puzzle.h"
 #include "../../../mempool/mempool.h"
 
+typedef struct thread_params_t thread_params_t;
+
+
 /**
  * Define a structure for holding all of our thread parameters. We will only be using the multithreaded 
  * version of the solver
  */
-struct thread_params {
+struct thread_params_t {
 	//The predecessor state
-	struct state* predecessor;
+	state_t* predecessor;
 	//0 = leftMove, 1 = rightMove, 2 = downMove, 3 = upMove
 	int option;
 	//The size of the N puzzle
 	int N;
 	//The successors array that we will store the states in
-	struct state** successors;
+	state_t** successors;
 	//The closed and fringe
-	struct fringe* fringe;
-	struct closed* closed;
+	fringe_t* fringe;
+	closed_t* closed;
 };
 
 
 //The solve function. In theory, this is the only thing that we should need to see from solver
-struct state* solve(int N, struct state* start_state, struct state* goal_state, int solver_mode);
+state_t* solve(const int N, state_t* start_state, state_t* goal_state, int solver_mode);
 
 #endif /* SOLVER_H */
