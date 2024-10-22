@@ -13,20 +13,11 @@
  * The initialize_state function takes in a pointer to a state and reserves the appropriate space for the dynamic array
  * that holds the tiles 
  */
-void initialize_state(mempool_t* mempool, state_t* statePtr, const int N){
+void initialize_state(state_t* statePtr, const int N){
 	//Declare all of the pointers needed for each row
-	statePtr->tiles = (u_int16_t*)mempool_alloc(mempool, sizeof(u_int16_t) * N * N);
+	memset(statePtr->tiles, 0, N*N*sizeof(u_int16_t));
 	statePtr->predecessor = NULL;
 	statePtr->next = NULL;
-}
-
-
-/**
- * The destroy_state function does the exact reverse of the initialize_state function to properly free memory
- */
-void destroy_state(mempool_t* mempool, state_t* statePtr){
-	//We only need to free the tile pointer in this case
-	mempool_free(mempool, statePtr->tiles);
 }
 
 
@@ -321,9 +312,9 @@ void update_prediction_function(state_t* statePtr, const int N){
  */
 state_t* initialize_goal(mempool_t* mempool, const int N){
 	//Initial allocation
-	state_t* goal_state = (state_t*)malloc(sizeof(state_t));
+	state_t* goal_state = (state_t*)mempool_alloc(mempool, sizeof(state_t));
 	//Dynamically allocate the memory needed in the goal_state
-	initialize_state(mempool, goal_state, N);	
+	initialize_state(goal_state, N);	
 
 	int row, col;
 	//To create the goal state, place the numbers 1-15 in the appropriate locations
@@ -518,7 +509,7 @@ state_t* generate_start_config(mempool_t* mempool, const int complexity, const i
 	//Create the simplified state that we will use for generation
 	state_t* statePtr = (state_t*)malloc(sizeof(state_t));
 	//Iniitialize the state with helper function
-	initialize_state(mempool, statePtr, N);
+	initialize_state(statePtr, N);
 
 	int row, col;
 	//Now generate the goal state. Once we create the goal state, we will "mess it up" according to the input number
@@ -605,8 +596,6 @@ void check_repeating_fringe(mempool_t* mempool, fringe_t* fringe, state_t** stat
 	for(int i = 0; i < fringe->next_fringe_index; i++){
 		//If the states match, we free the pointer and exit the loop
 		if(states_same(*statePtr, fringe->heap[i], N)){
-			//Properly tear down the dynamic array in the state to avoid memory leaks
-			destroy_state(mempool, *statePtr);
 			//Free the pointer to the state
 			mempool_free(mempool, *statePtr);
 			//Set the pointer to be null as a warning
@@ -634,7 +623,6 @@ void check_repeating_closed(mempool_t* mempool, closed_t* closed, state_t** stat
 		//If at any point we find that the states are the same
 		if(states_same(closed->array[i], *statePtr, N)){
 			//Free both the internal memory and the state pointer itself
-			destroy_state(mempool, *statePtr);
 			mempool_free(mempool, *statePtr);
 			//Set to null as a warning
 			*statePtr = NULL;
@@ -702,7 +690,6 @@ static int in_solution_path(state_t* state_ptr, state_t* solution_path, const in
 void cleanup_fringe_closed(mempool_t* mempool, fringe_t* fringe, closed_t* closed, state_t* solution_path, const int N){
 	//cleanup fringe
 	for(int i = 0; i < fringe->next_fringe_index; i++){
-		destroy_state(mempool, fringe->heap[i]);
 		mempool_free(mempool, fringe->heap[i]);
 	}
 
@@ -717,7 +704,6 @@ void cleanup_fringe_closed(mempool_t* mempool, fringe_t* fringe, closed_t* close
 		//for obvious reasons, if we destroy those states we will have issues
 		//so we must check here
 		if(in_solution_path(closed->array[i], solution_path, N) == 0){
-			destroy_state(mempool, closed->array[i]);
 			mempool_free(mempool, closed->array[i]);
 		}
 	}
@@ -744,10 +730,7 @@ void cleanup_solution_path(mempool_t* mempool, state_t* solution_path){
 
 		//Advance cursor for the next round
 		cursor = cursor->next;
-
-		//Free the tiles in cursor
-		destroy_state(mempool, temp);
-		
+	
 		//Free temp altogether
 		mempool_free(mempool, temp);
 	}

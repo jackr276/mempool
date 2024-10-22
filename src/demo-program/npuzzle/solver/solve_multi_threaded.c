@@ -9,6 +9,8 @@
  */
 
 //For timing
+#include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 //For multi-threading functionality
 #include <pthread.h>
@@ -33,7 +35,7 @@ static void* generator_worker(void* thread_params){
 		//Create the new state
 		moved = (state_t*)mempool_alloc(parameters->mempool, sizeof(state_t));
 		//Dynamically allocate the space needed in the state
-		initialize_state(parameters->mempool, moved, N);
+		initialize_state(moved, N);
 		//Perform a deep copy from predecessor to successor
 		copy_state(parameters->predecessor, moved, N);
 		//Use helper function to move left
@@ -44,7 +46,7 @@ static void* generator_worker(void* thread_params){
 		//Create the new state
 		moved = (state_t*)mempool_alloc(parameters->mempool, sizeof(state_t));
 		//Dynamically allocate the space needed in the state
-		initialize_state(parameters->mempool, moved, N);
+		initialize_state(moved, N);
 		//Perform a deep copy from predecessor to successor
 		copy_state(parameters->predecessor, moved, N);
 		//Use helper function to move right 
@@ -55,7 +57,7 @@ static void* generator_worker(void* thread_params){
 		//Create the new state
 		moved = (state_t*)mempool_alloc(parameters->mempool, sizeof(state_t));
 		//Dynamically allocate the space needed in the state
-		initialize_state(parameters->mempool, moved, N);
+		initialize_state(moved, N);
 		//Perform a deep copy from predecessor to successor
 		copy_state(parameters->predecessor, moved, N);
 		//Use helper function to move down	
@@ -66,7 +68,7 @@ static void* generator_worker(void* thread_params){
 		//Create the new state
 		moved = (state_t*)mempool_alloc(parameters->mempool, sizeof(state_t));
 		//Dynamically allocate the space needed in the state
-		initialize_state(parameters->mempool, moved, N);
+		initialize_state(moved, N);
 		//Perform a deep copy from predecessor to successor
 		copy_state(parameters->predecessor, moved, N);
 		//Use helper function to move up	
@@ -167,6 +169,11 @@ void print_solution_path(state_t* solution_path, const int N, int pathlen, int n
  * For mode: 0 equals web client solve, 1 equals debug(CLI) mode
  */
 state_t* solve(mempool_t* mempool, const int N, state_t* start_state, state_t* goal_state, int solver_mode){
+	if(N > 10){
+		printf("ERROR: N may not exceed 10\n");
+		exit(1);
+	}
+
 	//If we are in debug mode, we will start off by printing to the console
 	if(solver_mode == 1){
 		printf("\nInitial State:\n");

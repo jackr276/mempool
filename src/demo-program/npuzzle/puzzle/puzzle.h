@@ -24,8 +24,8 @@ typedef struct fringe_t fringe_t;
 * Defines a type of state, which is a structure, that represents a configuration in the gem puzzle game
 */
 struct state_t {
-   //Define a dynamic 2D array for the tiles since we have a variable puzzle size
-   u_int16_t* tiles;
+	//Define a static 2D array for the tiles
+   u_int8_t tiles[100];
    //For A*, define the total_cost, how far the tile has traveled, and heuristic cost int total_cost, current_travel, heuristic_cost;
    u_int16_t total_cost, current_travel, heuristic_cost;
    //location (row and colum) of blank tile 0
@@ -58,8 +58,7 @@ struct fringe_t {
 
 
 /* Method Protoypes */
-void initialize_state(mempool_t* mempool, state_t* state_ptr, const int N);
-void destroy_state(mempool_t* mempool, state_t* state_ptr);
+void initialize_state(state_t* state_ptr, const int N);
 void cleanup_fringe_closed(mempool_t* mempool, fringe_t* fringe, closed_t* closed, state_t* state_ptr, const int N);
 void cleanup_solution_path(mempool_t* mempool, state_t* solution);
 void print_state(state_t* state_ptr, const int N, int option);
