@@ -37,10 +37,10 @@ int main(void){
 	printf("Generating an N-Puzzle with N = %u and initial complexity = %u\n", N, complexity);
 
 	//We want to avoid coalescing blocks, so choose whichever is largest
-	u_int32_t default_block_size = (sizeof(state_t) > N*N*sizeof(u_int16_t)) ? sizeof(state_t) : N * N * sizeof(u_int16_t); 
+	u_int32_t default_block_size = sizeof(state_t); 
 
 	//Initialize a mempool for our uses
- 	mempool_t* mempool = mempool_init(N * complexity * 100 * KILOBYTE, default_block_size);
+ 	mempool_t* mempool = mempool_init(2000000 * sizeof(state_t), default_block_size);
 
 	//Generate the random puzzle
 	state_t* start = generate_start_config(mempool, complexity, N);

@@ -7,6 +7,8 @@
 #include "mempool.h"
 //For our thread safety and mutexes
 #include <pthread.h>
+#include <stdio.h>
+#include <sys/types.h>
 
 /**
  * Initialize the memory pool to be of "size" bytes
@@ -29,15 +31,15 @@ mempool_t* mempool_init(u_int32_t size, u_int32_t default_block_size){
 
 	mempool->num_coalesced = 0;
 
-	//Allocate the entire monolithic memory pool
-	mempool->memory_pool_original = malloc(size);
-
-	//Align the memory pool
-	u_int64_t alignment = (u_int64_t)(mempool->memory_pool_original) % 8;
-	mempool->memory_pool_aligned = mempool->memory_pool_original + alignment;
+	//Allocate the entire monolithic memory pool -- guaranteed to be 16 byte aligned by malloc
+	mempool->memory_pool = malloc((size + 15) & -16);
 
 	//Store the block size
- 	mempool->block_size = default_block_size + default_block_size % 8;
+	if(default_block_size < 16){
+		mempool->block_size = 16;
+	} else {
+ 		mempool->block_size = (default_block_size + 15) & -16;
+	}
 	
 	//Determine how many blocks we need to allocated
 	u_int32_t num_blocks = size / mempool->block_size; 
@@ -53,7 +55,7 @@ mempool_t* mempool_init(u_int32_t size, u_int32_t default_block_size){
 		//Reserve space for the block metadata
 		current = (struct mem_block_t*)malloc(sizeof(struct mem_block_t));
 		//"Allocate" the memory as an offset of the pool start pointer
-		current->ptr = mempool->memory_pool_aligned + offset * mempool->block_size; 
+		current->ptr = mempool->memory_pool + offset * mempool->block_size; 
 		//Initially everything has the same block size
 		current->size = mempool->block_size;
 		//Set to be NULL
@@ -522,7 +524,7 @@ int mempool_destroy(mempool_t* mempool){
 	mempool->allocated_list = NULL;
 
 	//Free the entire mempool
-	free(mempool->memory_pool_original);
+	free(mempool->memory_pool);
 
 	//Destroy the mutexes
 	pthread_mutex_destroy(&(mempool->free_mutex));

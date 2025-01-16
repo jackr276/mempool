@@ -62,8 +62,7 @@ struct mempool_t {
 	pthread_mutex_t allocated_mutex;
 
 	//The entire monolithic memory pool
-	void* memory_pool_original;
-	void* memory_pool_aligned;
+	void* memory_pool;
 };
 
 
