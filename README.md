@@ -11,7 +11,7 @@ Author: [Jack Robbins](https://www.github.com/jackr276)
 If these issues sound like something that your project is dealing with, then **mempool** may work well for you.
 
 ## mempool API details
-There are 6 functions exposed to the user by the `malloc.h` header file. Each of these functions is detailed below:
+There are 6 functions exposed to the user by the `mempool.h` header file. Each of these functions is detailed below:
 
 1.) mempool_init
 ```c
